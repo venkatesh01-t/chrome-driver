@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>E2E Demo Web App - Selenium Recorder Testbed</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f8fafc; color: #1e293b; }
+    .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 480px; margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem; }
+    input[type="text"], input[type="password"], select { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+    button { background: #2563eb; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1d4ed8; }
+    .btn-dynamic { background: #059669; }
+  </style>
+</head>
+<body>
+  <h1>Selenium Recorder Demo App</h1>
+
+  <!-- Standard Login Form -->
+  <div class="card">
+    <h2>Account Login</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" name="user_login" type="text" placeholder="Enter username" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="user_password" type="password" placeholder="Enter password" />
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input id="remember-me" name="remember" type="checkbox" /> Remember me on this device
+        </label>
+      </div>
+
+      <button id="login-button" type="button">Sign In</button>
+    </form>
+  </div>
+
+  <!-- Dynamic ID & Ambiguous Classes Section -->
+  <div class="card">
+    <h2>Dynamic Elements</h2>
+    <p>This button has a randomized dynamic ID on every page refresh:</p>
+    <!-- Dynamic ID: input-948271 -->
+    <button id="input-948271" name="btn_quick_sync" class="btn-dynamic" data-testid="sync-now-btn">Sync Data</button>
+  </div>
+</body>
+</html>
