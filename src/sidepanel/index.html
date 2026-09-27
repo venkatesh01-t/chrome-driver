@@ -30,18 +30,58 @@
     <section class="toolbar">
       <button id="toggleRecordBtn" class="btn btn-record">
         <span class="btn-icon">⏺</span>
-        <span class="btn-label">Start Recording</span>
+        <span class="btn-label">Record</span>
       </button>
-      <button id="clearBtn" class="btn btn-secondary" title="Clear all steps">
-        <span>🗑 Clear</span>
+      <button id="toggleInspectBtn" class="btn btn-secondary btn-inspect" title="Inspect & Click any element to get CSS/XPath">
+        <span class="btn-icon">🎯</span>
+        <span class="btn-label">Inspect</span>
+      </button>
+      <button id="clearBtn" class="btn btn-secondary btn-icon-only" title="Clear all steps">
+        <span>🗑</span>
       </button>
     </section>
 
     <!-- Inspection Bar -->
     <div id="inspectionBar" class="inspection-bar hidden">
-      <span class="inspect-label">Inspected:</span>
+      <span class="inspect-label">Hovering:</span>
       <span id="inspectedTag" class="inspect-tag"></span>
       <span id="inspectedSelector" class="inspect-selector"></span>
+    </div>
+
+    <!-- Inspector Details Drawer / Box -->
+    <div id="inspectorDetailsCard" class="inspector-card hidden">
+      <div class="inspector-header">
+        <div class="inspector-title-row">
+          <span class="badge-inspect">INSPECTED</span>
+          <span id="inspectDetailTag" class="inspect-detail-tag">&lt;div&gt;</span>
+          <span id="inspectMatchBadge" class="badge-match match-unique">1 match</span>
+        </div>
+        <button id="closeInspectCardBtn" class="btn-close" title="Close">✕</button>
+      </div>
+
+      <div class="inspector-field">
+        <div class="field-label-row">
+          <span class="field-label">CSS SELECTOR</span>
+          <button id="copyCssBtn" class="btn-copy-mini" title="Copy CSS">📋 Copy</button>
+        </div>
+        <div id="inspectCssVal" class="code-val"></div>
+      </div>
+
+      <div class="inspector-field">
+        <div class="field-label-row">
+          <span class="field-label">XPATH</span>
+          <button id="copyXpathBtn" class="btn-copy-mini" title="Copy XPath">📋 Copy</button>
+        </div>
+        <div id="inspectXpathVal" class="code-val"></div>
+      </div>
+
+      <div class="inspector-field">
+        <div class="field-label-row">
+          <span class="field-label">HTML SNIPPET</span>
+          <button id="copyHtmlBtn" class="btn-copy-mini" title="Copy HTML">📋 Copy</button>
+        </div>
+        <pre id="inspectHtmlVal" class="html-snippet"></pre>
+      </div>
     </div>
 
     <!-- Main Tabs -->
@@ -59,6 +99,9 @@
       <!-- Steps View -->
       <div id="stepsView" class="tab-view active">
         <div id="stepsList" class="steps-list"></div>
+        <button id="scrollToBottomBtn" class="btn-scroll-bottom hidden" title="Scroll to latest step">
+          <span>↓ Latest Step</span>
+        </button>
       </div>
 
       <!-- Code View -->

@@ -9,7 +9,10 @@ export type MessageType =
   | 'CLEAR_SESSION'
   | 'GET_SESSION_STATE'
   | 'SESSION_STATE_UPDATE'
-  | 'HOVER_ELEMENT_INSPECTED';
+  | 'HOVER_ELEMENT_INSPECTED'
+  | 'START_INSPECTING'
+  | 'STOP_INSPECTING'
+  | 'ELEMENT_SELECTED';
 
 export interface StartRecordingPayload {
   tabId?: number;
@@ -45,6 +48,17 @@ export interface HoverElementInspectedPayload {
   text?: string;
 }
 
+export interface ElementSelectedPayload {
+  tagName: string;
+  locators: LocatorCandidate[];
+  text?: string;
+  htmlSnippet: string;
+  cssSelector: string;
+  xpath: string;
+  matchCount?: number;
+  outerHtml?: string;
+}
+
 export type ExtensionMessage =
   | { type: 'START_RECORDING'; payload?: StartRecordingPayload }
   | { type: 'STOP_RECORDING'; payload?: StopRecordingPayload }
@@ -54,4 +68,7 @@ export type ExtensionMessage =
   | { type: 'CLEAR_SESSION' }
   | { type: 'GET_SESSION_STATE' }
   | { type: 'SESSION_STATE_UPDATE'; payload: SessionStateUpdatePayload }
-  | { type: 'HOVER_ELEMENT_INSPECTED'; payload: HoverElementInspectedPayload };
+  | { type: 'HOVER_ELEMENT_INSPECTED'; payload: HoverElementInspectedPayload }
+  | { type: 'START_INSPECTING' }
+  | { type: 'STOP_INSPECTING' }
+  | { type: 'ELEMENT_SELECTED'; payload: ElementSelectedPayload };

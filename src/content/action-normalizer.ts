@@ -57,6 +57,9 @@ export class ActionNormalizer {
       return;
     }
 
+    const isInsideShadow = locators.some((l) => l.isShadowDom);
+    const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action,
@@ -67,6 +70,8 @@ export class ActionNormalizer {
         text: (element.textContent || '').trim().substring(0, 50),
         semanticType: semantics.semanticType,
         labelText: semantics.labelText,
+        shadowHostSelector,
+        isShadowDom: isInsideShadow,
       },
       value,
       waitCondition: 'clickable',
@@ -84,6 +89,9 @@ export class ActionNormalizer {
     const selectedOption = element.options[element.selectedIndex];
     const value = selectedOption ? (selectedOption.text.trim() || selectedOption.value) : element.value;
 
+    const isInsideShadow = locators.some((l) => l.isShadowDom);
+    const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action: 'select',
@@ -94,6 +102,8 @@ export class ActionNormalizer {
         text: (element.textContent || '').trim().substring(0, 50),
         semanticType: 'dropdown',
         labelText: semantics.labelText,
+        shadowHostSelector,
+        isShadowDom: isInsideShadow,
       },
       value,
       waitCondition: 'presence',
@@ -124,6 +134,9 @@ export class ActionNormalizer {
     // If user clicked but left empty, use smart semantic default value
     const effectiveValue = (value && value.trim()) ? value : semantics.defaultValue;
 
+    const isInsideShadow = locators.some((l) => l.isShadowDom);
+    const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action: 'type',
@@ -134,6 +147,8 @@ export class ActionNormalizer {
         isSensitive,
         semanticType: semantics.semanticType,
         labelText: semantics.labelText,
+        shadowHostSelector,
+        isShadowDom: isInsideShadow,
       },
       value: isSensitive ? '••••••••' : effectiveValue,
       isSensitive,

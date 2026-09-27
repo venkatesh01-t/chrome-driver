@@ -91,6 +91,28 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
             break;
           }
 
+          case 'START_INSPECTING': {
+            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+              const tab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://'));
+              if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, { type: 'START_INSPECTING' }).catch(() => {});
+              }
+            });
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'STOP_INSPECTING': {
+            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+              const tab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://'));
+              if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, { type: 'STOP_INSPECTING' }).catch(() => {});
+              }
+            });
+            sendResponse({ success: true });
+            break;
+          }
+
           default:
             sendResponse({ unknown: true });
         }
@@ -100,3 +122,29 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
     }
   );
 }
+
+// Keep multi-tab recording synchronized across all tabs and navigations
+if (typeof chrome !== 'undefined' && chrome.tabs) {
+  if (chrome.tabs.onUpdated) {
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (
+        sessionManager.isRecording &&
+        changeInfo.status === 'complete' &&
+        tab.url &&
+        !tab.url.startsWith('chrome://') &&
+        !tab.url.startsWith('chrome-extension://')
+      ) {
+        chrome.tabs.sendMessage(tabId, { type: 'START_RECORDING' }).catch(() => {});
+      }
+    });
+  }
+
+  if (chrome.tabs.onActivated) {
+    chrome.tabs.onActivated.addListener(async (activeInfo) => {
+      if (sessionManager.isRecording) {
+        chrome.tabs.sendMessage(activeInfo.tabId, { type: 'START_RECORDING' }).catch(() => {});
+      }
+    });
+  }
+}
+

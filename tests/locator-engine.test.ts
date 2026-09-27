@@ -132,5 +132,73 @@ describe('Smart Locator Engine', () => {
     expect(searchSemantics.semanticType).toBe('search');
     expect(searchSemantics.defaultValue).toBe('Test query');
   });
+
+  it('filters out unstable framework classes (Angular/Stencil) and prevents fragile selectors', () => {
+    document.body.innerHTML = `
+      <gt-ess-menu class="ng-star-inserted hydrated">
+        <span>Attendance</span>
+      </gt-ess-menu>
+    `;
+    const menu = document.querySelector('gt-ess-menu') as HTMLElement;
+    const candidates = generateLocators(menu, document);
+
+    // Should NOT have a css candidate with ng-star-inserted or hydrated
+    const fragileCss = candidates.find(
+      (c) => c.strategy === 'css' && (c.value.includes('ng-star-inserted') || c.value.includes('hydrated'))
+    );
+    expect(fragileCss).toBeUndefined();
+
+    // Should generate a semantic XPath using the custom element text or inner text
+    const textXpath = candidates.find((c) => c.strategy === 'xpath');
+    expect(textXpath).toBeDefined();
+    expect(textXpath?.value).toContain('Attendance');
+    expect(textXpath?.isUnique).toBe(true);
+  });
+
+  it('generates accurate text-based locators for custom calendar cells', () => {
+    document.body.innerHTML = `
+      <div class="calendar-grid">
+        <gt-attendance-calendar-cell class="ng-star-inserted">21P1300</gt-attendance-calendar-cell>
+        <gt-attendance-calendar-cell class="ng-star-inserted">22P1322</gt-attendance-calendar-cell>
+        <gt-attendance-calendar-cell class="ng-star-inserted">23P1310</gt-attendance-calendar-cell>
+      </div>
+    `;
+    const targetCell = document.querySelectorAll('gt-attendance-calendar-cell')[1] as HTMLElement;
+    const candidates = generateLocators(targetCell, document);
+
+    const xpathCandidate = candidates.find(
+      (c) => c.strategy === 'xpath' && c.value.includes('22P1322')
+    );
+    expect(xpathCandidate).toBeDefined();
+    expect(xpathCandidate?.isUnique).toBe(true);
+  });
+
+  it('generates accurate locator for link containing nested icon element', () => {
+    document.body.innerHTML = `
+      <nav class="sidebar">
+        <a href="/v3/portal/ess/attendance" class="menu-item">
+          <gt-icon class="icon">event</gt-icon>
+          <span class="title">Attendance</span>
+        </a>
+        <a href="/v3/portal/ess/leaves" class="menu-item">
+          <gt-icon class="icon">flight</gt-icon>
+          <span class="title">Leave</span>
+        </a>
+      </nav>
+    `;
+    const attendanceLink = document.querySelector('a[href*="attendance"]') as HTMLElement;
+    const candidates = generateLocators(attendanceLink, document);
+
+    // Candidates with matchCount > 0 must be ranked before any 0-match candidates
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates[0].matchCount).toBeGreaterThan(0);
+    expect(candidates[0].isUnique).toBe(true);
+
+    const matchCandidate = candidates.find(c => c.value.includes('Attendance') && c.isUnique);
+    expect(matchCandidate).toBeDefined();
+    expect(matchCandidate?.matchCount).toBe(1);
+  });
 });
+
+
 

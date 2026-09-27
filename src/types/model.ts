@@ -13,7 +13,9 @@ export interface LocatorCandidate {
   isUnique: boolean;
   matchCount: number;
   score: number;
-  warning?: 'multiple_matches' | 'dynamic_id' | 'dom_dependent';
+  warning?: 'multiple_matches' | 'dynamic_id' | 'dom_dependent' | 'no_matches';
+  shadowHostSelector?: string;
+  isShadowDom?: boolean;
 }
 
 export type ActionType =
@@ -33,6 +35,8 @@ export interface TargetElementModel {
   isSensitive?: boolean;
   semanticType?: string;
   labelText?: string;
+  shadowHostSelector?: string;
+  isShadowDom?: boolean;
 }
 
 export interface TestStep {

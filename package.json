@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "package": "npm run build && powershell -Command \"Compress-Archive -Path dist/* -DestinationPath selenium-recorder-extension.zip -Force\"",
     "test": "vitest run",
     "test:watch": "vitest"
   },
