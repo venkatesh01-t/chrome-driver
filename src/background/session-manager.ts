@@ -93,9 +93,12 @@ export class SessionManager {
     await this.persist();
   }
 
-  public async addStep(step: TestStep): Promise<void> {
+  public async addStep(step: TestStep, currentUrl?: string): Promise<void> {
     if (!this._activeTestCase) {
-      this._activeTestCase = createTestCase('Automated Test');
+      this._activeTestCase = createTestCase('Automated Test', currentUrl || '');
+    }
+    if (currentUrl && (!this._activeTestCase.url || this._activeTestCase.url === 'https://example.com' || this._activeTestCase.url.startsWith('chrome-extension://'))) {
+      this._activeTestCase.url = currentUrl;
     }
     // Update step numbers sequentially
     step.stepNumber = this._activeTestCase.steps.length + 1;

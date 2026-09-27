@@ -83,4 +83,41 @@ describe('Action Normalizer', () => {
     expect(emittedSteps[0].action).toBe('checkbox');
     expect(emittedSteps[0].value).toBe('true');
   });
+
+  it('records dropdown select with visible option text', () => {
+    document.body.innerHTML = `
+      <select id="country">
+        <option value="us">United States</option>
+        <option value="in" selected>India</option>
+        <option value="uk">United Kingdom</option>
+      </select>
+    `;
+    const select = document.getElementById('country') as HTMLSelectElement;
+
+    normalizer.recordSelect(select);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('select');
+    expect(emittedSteps[0].value).toBe('India');
+    expect(emittedSteps[0].waitCondition).toBe('presence');
+  });
+
+  it('provides smart semantic prefill when clicking an input without typing', () => {
+    document.body.innerHTML = `
+      <label for="work-email">Email Address</label>
+      <input id="work-email" type="email" />
+    `;
+    const input = document.getElementById('work-email') as HTMLInputElement;
+
+    // User clicks input but does not manually type
+    normalizer.recordClick(input);
+    normalizer.flushInput();
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('type');
+    expect(emittedSteps[0].value).toBe('user@example.com');
+    expect(emittedSteps[0].target.semanticType).toBe('email');
+    expect(emittedSteps[0].target.labelText).toBe('Email Address');
+  });
 });
+

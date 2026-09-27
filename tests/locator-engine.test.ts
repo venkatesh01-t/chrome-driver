@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateLocators, isDynamicId } from '../src/content/locator-engine';
+import { generateLocators, isDynamicId, detectFieldSemantics } from '../src/content/locator-engine';
 import { validateLocator } from '../src/content/locator-validator';
 
 describe('Smart Locator Engine', () => {
@@ -99,4 +99,38 @@ describe('Smart Locator Engine', () => {
     const uniqueCandidate = candidates.find(c => c.isUnique);
     expect(uniqueCandidate).toBeDefined();
   });
+
+  it('detects input semantics and default realistic sample data', () => {
+    document.body.innerHTML = `
+      <form>
+        <label for="user-email">Work Email</label>
+        <input id="user-email" type="email" placeholder="name@company.com" />
+
+        <label for="contact-phone">Phone Number</label>
+        <input id="contact-phone" type="tel" name="phone_number" />
+
+        <label for="site-search">Search query</label>
+        <input id="site-search" type="search" />
+      </form>
+    `;
+
+    const emailInput = document.getElementById('user-email') as HTMLInputElement;
+    const phoneInput = document.getElementById('contact-phone') as HTMLInputElement;
+    const searchInput = document.getElementById('site-search') as HTMLInputElement;
+
+    const emailSemantics = detectFieldSemantics(emailInput, document);
+    expect(emailSemantics.semanticType).toBe('email');
+    expect(emailSemantics.defaultValue).toBe('user@example.com');
+    expect(emailSemantics.labelText).toBe('Work Email');
+
+    const phoneSemantics = detectFieldSemantics(phoneInput, document);
+    expect(phoneSemantics.semanticType).toBe('phone');
+    expect(phoneSemantics.defaultValue).toBe('+1234567890');
+    expect(phoneSemantics.labelText).toBe('Phone Number');
+
+    const searchSemantics = detectFieldSemantics(searchInput, document);
+    expect(searchSemantics.semanticType).toBe('search');
+    expect(searchSemantics.defaultValue).toBe('Test query');
+  });
 });
+

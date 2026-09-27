@@ -31,57 +31,80 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     });
 
     normalizer = new ActionNormalizer(async (step) => {
-      await sessionManager.addStep(step);
+      await sessionManager.addStep(step, 'https://demo.example.com/app');
     });
   });
 
-  it('records full user journey and generates valid, verified Python Selenium script', async () => {
+  it('records full user journey including dropdowns, semantic inputs, and scrolling', async () => {
     // Step 1: User types username
     const usernameInput = document.getElementById('username') as HTMLInputElement;
     normalizer.recordInput(usernameInput, 'qa_engineer');
     normalizer.flushInput();
 
-    // Step 2: User types sensitive password
+    // Step 2: User clicks email without typing -> smart prefill
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    normalizer.recordClick(emailInput);
+    normalizer.flushInput();
+
+    // Step 3: User types sensitive password
     const passwordInput = document.getElementById('password') as HTMLInputElement;
     normalizer.recordInput(passwordInput, 'MyTopSecretP@ss999!');
     normalizer.flushInput();
 
-    // Step 3: User checks "Remember Me"
+    // Step 4: User selects dropdown option
+    const planSelect = document.getElementById('plan-selection') as HTMLSelectElement;
+    planSelect.selectedIndex = 2; // Enterprise Custom
+    normalizer.recordSelect(planSelect);
+
+    // Step 5: User checks "Remember Me"
     const rememberCheckbox = document.getElementById('remember-me') as HTMLInputElement;
     rememberCheckbox.checked = true;
     normalizer.recordClick(rememberCheckbox);
 
-    // Step 4: User clicks button with dynamic ID (should select data-testid or name)
+    // Step 6: User clicks button with dynamic ID (should select data-testid or name)
     const dynamicBtn = document.querySelector('[data-testid="sync-now-btn"]') as HTMLButtonElement;
     normalizer.recordClick(dynamicBtn);
 
-    // Step 5: User clicks Submit
-    const loginBtn = document.getElementById('login-button') as HTMLButtonElement;
-    normalizer.recordClick(loginBtn);
+    // Step 7: User scrolls to bottom and clicks deep scroll button
+    const scrollBtn = document.getElementById('deep-scroll-btn') as HTMLButtonElement;
+    normalizer.recordClick(scrollBtn);
 
     // Verify Session State
     expect(sessionManager.activeTestCase).not.toBeNull();
     const steps = sessionManager.activeTestCase!.steps;
-    expect(steps.length).toBe(5);
+    expect(steps.length).toBe(7);
 
-    // Verify Step Actions
+    // Step 1: Username
     expect(steps[0].action).toBe('type');
     expect(steps[0].value).toBe('qa_engineer');
 
-    // Verify Password Masking
+    // Step 2: Email smart prefill
     expect(steps[1].action).toBe('type');
-    expect(steps[1].isSensitive).toBe(true);
-    expect(steps[1].value).toBe('••••••••');
-    expect(steps[1].variableName).toBe('TEST_PASSWORD');
+    expect(steps[1].value).toBe('user@example.com');
+    expect(steps[1].target.semanticType).toBe('email');
 
-    // Verify Checkbox
-    expect(steps[2].action).toBe('checkbox');
-    expect(steps[2].value).toBe('true');
+    // Step 3: Password Masking
+    expect(steps[2].action).toBe('type');
+    expect(steps[2].isSensitive).toBe(true);
+    expect(steps[2].value).toBe('••••••••');
+    expect(steps[2].variableName).toBe('TEST_PASSWORD');
 
-    // Verify Dynamic ID Demotion
-    const step4SelectedLocator = steps[3].target.locators[steps[3].target.selectedLocatorIndex];
-    expect(step4SelectedLocator.strategy).not.toBe('id');
-    expect(['data-testid', 'name']).toContain(step4SelectedLocator.strategy);
+    // Step 4: Dropdown Select
+    expect(steps[3].action).toBe('select');
+    expect(steps[3].value).toContain('Enterprise Custom');
+
+    // Step 5: Checkbox
+    expect(steps[4].action).toBe('checkbox');
+    expect(steps[4].value).toBe('true');
+
+    // Step 6: Dynamic ID Demotion
+    const step6SelectedLocator = steps[5].target.locators[steps[5].target.selectedLocatorIndex];
+    expect(step6SelectedLocator.strategy).not.toBe('id');
+    expect(['data-testid', 'name']).toContain(step6SelectedLocator.strategy);
+
+    // Step 7: Scrolled Button
+    expect(steps[6].action).toBe('click');
+    expect(steps[6].target.locators[0].value).toBe('deep-scroll-btn');
 
     // Generate Python Selenium Script
     const pythonCode = generateSeleniumScript(sessionManager.activeTestCase!);
@@ -91,6 +114,7 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     expect(pythonCode).toContain('from selenium.webdriver.common.by import By');
     expect(pythonCode).toContain('from selenium.webdriver.support.ui import WebDriverWait');
     expect(pythonCode).toContain('from selenium.webdriver.support import expected_conditions as EC');
+    expect(pythonCode).toContain('from selenium.webdriver.support.ui import Select');
     expect(pythonCode).toContain('import os');
 
     // Verify Password never appears in generated code
@@ -98,6 +122,13 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     expect(pythonCode).not.toContain('••••••••');
     expect(pythonCode).toContain('TEST_PASSWORD = os.getenv("TEST_PASSWORD", "CHANGE_ME")');
     expect(pythonCode).toContain('.send_keys(TEST_PASSWORD)');
+
+    // Verify Select code
+    expect(pythonCode).toContain('select_elem = Select(wait.until(');
+    expect(pythonCode).toContain('select_elem.select_by_visible_text(');
+
+    // Verify Auto-Scroll before actions
+    expect(pythonCode).toContain('scrollIntoView({block: \'center\', inline: \'nearest\'});');
 
     // Verify Checkbox logic
     expect(pythonCode).toContain('if not checkbox.is_selected():');

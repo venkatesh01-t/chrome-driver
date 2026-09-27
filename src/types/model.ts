@@ -31,6 +31,8 @@ export interface TargetElementModel {
   selectedLocatorIndex: number;
   text?: string;
   isSensitive?: boolean;
+  semanticType?: string;
+  labelText?: string;
 }
 
 export interface TestStep {

@@ -22,6 +22,7 @@ export interface StopRecordingPayload {
 
 export interface RecordedStepPayload {
   step: TestStep;
+  url?: string;
 }
 
 export interface DeleteStepPayload {

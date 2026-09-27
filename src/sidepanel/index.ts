@@ -105,8 +105,8 @@ toggleRecordBtn.addEventListener('click', () => {
   if (typeof chrome === 'undefined' || !chrome.runtime) return;
 
   if (!isRecording) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const currentTab = tabs[0];
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+      const currentTab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://')) || tabs[0];
       chrome.runtime.sendMessage(
         {
           type: 'START_RECORDING',

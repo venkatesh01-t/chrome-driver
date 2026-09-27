@@ -26,18 +26,22 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
           }
 
           case 'START_RECORDING': {
-            const url = message.payload?.url || sender.tab?.url;
-            await sessionManager.startRecording({ url });
-            // Notify active tab to start recording
-            if (sender.tab?.id) {
-              chrome.tabs.sendMessage(sender.tab.id, { type: 'START_RECORDING' }).catch(() => {});
-            } else {
-              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                if (tabs[0]?.id) {
-                  chrome.tabs.sendMessage(tabs[0].id, { type: 'START_RECORDING' }).catch(() => {});
-                }
-              });
+            let targetUrl = message.payload?.url;
+            if (!targetUrl || targetUrl.startsWith('chrome-extension://') || targetUrl.startsWith('chrome://')) {
+              const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+              const validTab = activeTabs.find((t) => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://'));
+              if (validTab?.url) {
+                targetUrl = validTab.url;
+              }
             }
+            await sessionManager.startRecording({ url: targetUrl });
+            // Notify active tab to start recording
+            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+              const tab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://'));
+              if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, { type: 'START_RECORDING' }).catch(() => {});
+              }
+            });
             sendResponse({ success: true, activeTestCase: sessionManager.activeTestCase });
             break;
           }
@@ -55,7 +59,8 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
 
           case 'RECORDED_STEP': {
             if (sessionManager.isRecording && message.payload?.step) {
-              await sessionManager.addStep(message.payload.step);
+              const stepUrl = message.payload.url || sender.tab?.url;
+              await sessionManager.addStep(message.payload.step, stepUrl);
             }
             sendResponse({ success: true });
             break;

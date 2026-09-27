@@ -12,7 +12,7 @@ export class EventRecorder {
       if (!this.isRecording) return;
       this.sendToBackground({
         type: 'RECORDED_STEP',
-        payload: { step },
+        payload: { step, url: window.location.href },
       });
     });
 
@@ -56,7 +56,7 @@ export class EventRecorder {
       true
     );
 
-    // Blur / Change Listener (flushes typing buffer)
+    // Blur / Change Listener (flushes typing buffer or captures select changes)
     document.addEventListener(
       'blur',
       () => {
@@ -68,8 +68,13 @@ export class EventRecorder {
 
     document.addEventListener(
       'change',
-      () => {
+      (e: Event) => {
         if (!this.isRecording) return;
+        const target = e.target as HTMLElement;
+        if (target && target.tagName.toLowerCase() === 'select') {
+          this.normalizer.recordSelect(target as HTMLSelectElement);
+          return;
+        }
         this.normalizer.flushInput();
       },
       true

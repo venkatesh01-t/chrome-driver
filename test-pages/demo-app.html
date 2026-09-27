@@ -4,26 +4,38 @@
   <meta charset="UTF-8">
   <title>E2E Demo Web App - Selenium Recorder Testbed</title>
   <style>
-    body { font-family: sans-serif; padding: 2rem; background: #f8fafc; color: #1e293b; }
-    .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 480px; margin-bottom: 2rem; }
+    body { font-family: sans-serif; padding: 2rem; background: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; }
+    .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem; }
     .form-group { margin-bottom: 1rem; }
     label { display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem; }
-    input[type="text"], input[type="password"], select { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
     button { background: #2563eb; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
     button:hover { background: #1d4ed8; }
     .btn-dynamic { background: #059669; }
+    .btn-scroll { background: #7c3aed; }
+    .scroll-spacer { height: 750px; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); border-radius: 8px; margin: 2rem 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: 600; }
   </style>
 </head>
 <body>
   <h1>Selenium Recorder Demo App</h1>
 
-  <!-- Standard Login Form -->
+  <!-- Standard Login & Profile Form -->
   <div class="card">
-    <h2>Account Login</h2>
-    <form id="loginForm">
+    <h2>Account Information</h2>
+    <form id="profileForm">
       <div class="form-group">
         <label for="username">Username</label>
         <input id="username" name="user_login" type="text" placeholder="Enter username" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Work Email</label>
+        <input id="email" name="user_email" type="email" placeholder="name@company.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input id="phone" name="phone_number" type="tel" placeholder="+1 234 567 890" />
       </div>
 
       <div class="form-group">
@@ -32,21 +44,40 @@
       </div>
 
       <div class="form-group">
+        <label for="plan-selection">Subscription Plan</label>
+        <select id="plan-selection" name="plan">
+          <option value="free">Community Free</option>
+          <option value="pro" selected>Professional ($29/mo)</option>
+          <option value="enterprise">Enterprise Custom</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label>
           <input id="remember-me" name="remember" type="checkbox" /> Remember me on this device
         </label>
       </div>
 
-      <button id="login-button" type="button">Sign In</button>
+      <button id="login-button" type="button">Save Account Info</button>
     </form>
   </div>
 
-  <!-- Dynamic ID & Ambiguous Classes Section -->
+  <!-- Dynamic Elements -->
   <div class="card">
     <h2>Dynamic Elements</h2>
-    <p>This button has a randomized dynamic ID on every page refresh:</p>
-    <!-- Dynamic ID: input-948271 -->
+    <p>This button has a randomized dynamic ID to verify heuristic detection:</p>
     <button id="input-948271" name="btn_quick_sync" class="btn-dynamic" data-testid="sync-now-btn">Sync Data</button>
+  </div>
+
+  <!-- Long Page Scroll Section -->
+  <div class="scroll-spacer">
+    ↓ Scroll down to view footer actions ↓
+  </div>
+
+  <div class="card">
+    <h2>Footer Actions (Scrolled Section)</h2>
+    <p>Verify that elements requiring page scrolling generate scrollIntoView:</p>
+    <button id="deep-scroll-btn" class="btn-scroll" type="button">Complete All Registrations</button>
   </div>
 </body>
 </html>

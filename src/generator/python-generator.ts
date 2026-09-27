@@ -29,9 +29,14 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
 
   // Identify all sensitive variables
   const sensitiveVars = new Map<string, string>();
+  let hasSelect = false;
+
   for (const step of steps) {
     if (step.isSensitive && step.variableName) {
       sensitiveVars.set(step.variableName, step.variableName);
+    }
+    if (step.action === 'select') {
+      hasSelect = true;
     }
   }
 
@@ -52,6 +57,9 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
   lines.push('from selenium.webdriver.common.by import By');
   lines.push('from selenium.webdriver.support.ui import WebDriverWait');
   lines.push('from selenium.webdriver.support import expected_conditions as EC');
+  if (hasSelect) {
+    lines.push('from selenium.webdriver.support.ui import Select');
+  }
   lines.push('');
 
   // Environment variables initialization
@@ -77,6 +85,10 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
     lines.push(`        # Navigate to target page`);
     lines.push(`        driver.get("${testCase.url}")`);
     lines.push('');
+  } else {
+    lines.push(`        # Set target URL`);
+    lines.push(`        driver.get("https://example.com")`);
+    lines.push('');
   }
 
   // Steps
@@ -91,12 +103,26 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
         ? formatLocatorTuple(candidate)
         : `(By.TAG_NAME, "${step.target.tagName}")`;
 
-      lines.push(`        # Step ${i + 1}: ${step.action.toUpperCase()} on <${step.target.tagName}>`);
+      // Build descriptive comment
+      let descPart = '';
+      if (step.action === 'select' && step.value) {
+        const labelStr = step.target.labelText ? ` in "${step.target.labelText}"` : '';
+        descPart = `SELECT "${step.value}"${labelStr}`;
+      } else if (step.target.labelText) {
+        descPart = `${step.action.toUpperCase()} into "${step.target.labelText}"`;
+      } else if (step.target.text) {
+        descPart = `${step.action.toUpperCase()} on "${step.target.text}"`;
+      } else {
+        descPart = `${step.action.toUpperCase()}`;
+      }
+      lines.push(`        # Step ${i + 1}: ${descPart} <${step.target.tagName}>`);
 
       if (step.action === 'click') {
-        lines.push(`        wait.until(`);
+        lines.push(`        element = wait.until(`);
         lines.push(`            EC.element_to_be_clickable(${locatorTuple})`);
-        lines.push(`        ).click()`);
+        lines.push(`        )`);
+        lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
+        lines.push(`        element.click()`);
       } else if (step.action === 'type') {
         const valExpression = step.isSensitive && step.variableName
           ? step.variableName
@@ -105,12 +131,19 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
         lines.push(`        element = wait.until(`);
         lines.push(`            EC.visibility_of_element_located(${locatorTuple})`);
         lines.push(`        )`);
+        lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
         lines.push(`        element.clear()`);
         lines.push(`        element.send_keys(${valExpression})`);
+      } else if (step.action === 'select') {
+        lines.push(`        select_elem = Select(wait.until(`);
+        lines.push(`            EC.presence_of_element_located(${locatorTuple})`);
+        lines.push(`        ))`);
+        lines.push(`        select_elem.select_by_visible_text(${JSON.stringify(step.value ?? '')})`);
       } else if (step.action === 'checkbox') {
         lines.push(`        checkbox = wait.until(`);
         lines.push(`            EC.element_to_be_clickable(${locatorTuple})`);
         lines.push(`        )`);
+        lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", checkbox)`);
         if (step.value === 'false') {
           lines.push(`        if checkbox.is_selected():`);
           lines.push(`            checkbox.click()`);
@@ -122,12 +155,15 @@ export function generateSeleniumScript(testCase: TestCaseModel): string {
         lines.push(`        radio = wait.until(`);
         lines.push(`            EC.element_to_be_clickable(${locatorTuple})`);
         lines.push(`        )`);
+        lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", radio)`);
         lines.push(`        if not radio.is_selected():`);
         lines.push(`            radio.click()`);
       } else if (step.action === 'clear') {
-        lines.push(`        wait.until(`);
+        lines.push(`        element = wait.until(`);
         lines.push(`            EC.visibility_of_element_located(${locatorTuple})`);
-        lines.push(`        ).clear()`);
+        lines.push(`        )`);
+        lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
+        lines.push(`        element.clear()`);
       }
       lines.push('');
     }

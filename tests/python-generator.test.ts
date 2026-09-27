@@ -105,4 +105,52 @@ describe('Python Selenium Code Generator', () => {
     expect(code).toContain('if not checkbox.is_selected():');
     expect(code).toContain('checkbox.click()');
   });
+
+  it('generates Select dropdown interaction code with Select import', () => {
+    const testCase = createTestCase('Dropdown Test', 'https://example.com/form');
+    testCase.steps.push(
+      createTestStep({
+        stepNumber: 1,
+        action: 'select',
+        target: {
+          tagName: 'select',
+          locators: [{ strategy: 'id', value: 'country-select', isUnique: true, matchCount: 1, score: 100 }],
+          selectedLocatorIndex: 0,
+          labelText: 'Country of Residence',
+        },
+        value: 'Germany',
+        waitCondition: 'presence',
+      })
+    );
+
+    const code = generateSeleniumScript(testCase);
+
+    expect(code).toContain('from selenium.webdriver.support.ui import Select');
+    expect(code).toContain('select_elem = Select(wait.until(');
+    expect(code).toContain('EC.presence_of_element_located((By.ID, "country-select"))');
+    expect(code).toContain('select_elem.select_by_visible_text("Germany")');
+    expect(code).toContain('# Step 1: SELECT "Germany" in "Country of Residence" <select>');
+  });
+
+  it('generates scrollIntoView script before interactions for flake-free clicks on long pages', () => {
+    const testCase = createTestCase('Scroll Click Test', 'https://example.com');
+    testCase.steps.push(
+      createTestStep({
+        stepNumber: 1,
+        action: 'click',
+        target: {
+          tagName: 'button',
+          locators: [{ strategy: 'id', value: 'deep-footer-btn', isUnique: true, matchCount: 1, score: 100 }],
+          selectedLocatorIndex: 0,
+          text: 'Subscribe',
+        },
+        waitCondition: 'clickable',
+      })
+    );
+
+    const code = generateSeleniumScript(testCase);
+
+    expect(code).toContain('scrollIntoView({block: \'center\'');
+    expect(code).toContain('element.click()');
+  });
 });

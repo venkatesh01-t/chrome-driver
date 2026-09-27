@@ -1,5 +1,5 @@
 import { TestStep, createTestStep } from '../types/model';
-import { generateLocators } from './locator-engine';
+import { generateLocators, detectFieldSemantics } from './locator-engine';
 
 interface InputBuffer {
   element: HTMLInputElement | HTMLTextAreaElement;
@@ -32,19 +32,29 @@ export class ActionNormalizer {
 
     const tagName = element.tagName.toLowerCase();
     const locators = generateLocators(element);
+    const semantics = detectFieldSemantics(element);
 
     let action: TestStep['action'] = 'click';
     let value: string | undefined;
 
     if (tagName === 'input') {
       const input = element as HTMLInputElement;
-      if (input.type === 'checkbox') {
+      const type = (input.type || 'text').toLowerCase();
+
+      if (type === 'checkbox') {
         action = 'checkbox';
         value = input.checked ? 'true' : 'false';
-      } else if (input.type === 'radio') {
+      } else if (type === 'radio') {
         action = 'radio';
         value = input.value;
+      } else if (['text', 'email', 'password', 'tel', 'number', 'search', 'url', 'date'].includes(type)) {
+        // Clicking an editable input buffers it so it captures either typed or smart prefill
+        this.recordInput(input, input.value);
+        return;
       }
+    } else if (tagName === 'textarea') {
+      this.recordInput(element as HTMLTextAreaElement, (element as HTMLTextAreaElement).value);
+      return;
     }
 
     const step = createTestStep({
@@ -55,9 +65,38 @@ export class ActionNormalizer {
         locators,
         selectedLocatorIndex: 0,
         text: (element.textContent || '').trim().substring(0, 50),
+        semanticType: semantics.semanticType,
+        labelText: semantics.labelText,
       },
       value,
       waitCondition: 'clickable',
+    });
+
+    this.onStep(step);
+  }
+
+  public recordSelect(element: HTMLSelectElement): void {
+    this.flushInput();
+    const tagName = 'select';
+    const locators = generateLocators(element);
+    const semantics = detectFieldSemantics(element);
+
+    const selectedOption = element.options[element.selectedIndex];
+    const value = selectedOption ? (selectedOption.text.trim() || selectedOption.value) : element.value;
+
+    const step = createTestStep({
+      stepNumber: this.stepCounter++,
+      action: 'select',
+      target: {
+        tagName,
+        locators,
+        selectedLocatorIndex: 0,
+        text: (element.textContent || '').trim().substring(0, 50),
+        semanticType: 'dropdown',
+        labelText: semantics.labelText,
+      },
+      value,
+      waitCondition: 'presence',
     });
 
     this.onStep(step);
@@ -77,11 +116,13 @@ export class ActionNormalizer {
     const { element, value } = this.currentInputBuffer;
     this.currentInputBuffer = null;
 
-    if (!value && value !== '') return;
-
     const tagName = element.tagName.toLowerCase();
     const locators = generateLocators(element);
-    const isSensitive = this.detectSensitiveField(element);
+    const semantics = detectFieldSemantics(element);
+    const isSensitive = semantics.semanticType === 'password' || this.detectSensitiveField(element);
+
+    // If user clicked but left empty, use smart semantic default value
+    const effectiveValue = (value && value.trim()) ? value : semantics.defaultValue;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -91,8 +132,10 @@ export class ActionNormalizer {
         locators,
         selectedLocatorIndex: 0,
         isSensitive,
+        semanticType: semantics.semanticType,
+        labelText: semantics.labelText,
       },
-      value: isSensitive ? '••••••••' : value,
+      value: isSensitive ? '••••••••' : effectiveValue,
       isSensitive,
       variableName: isSensitive ? this.deriveVariableName(element) : undefined,
       waitCondition: 'visible',
