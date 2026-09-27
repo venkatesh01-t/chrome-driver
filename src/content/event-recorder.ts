@@ -5,7 +5,6 @@ import { generateLocators } from './locator-engine';
 export class EventRecorder {
   private normalizer: ActionNormalizer;
   private isRecording = false;
-  private highlightedElement: HTMLElement | null = null;
   private highlightOverlay: HTMLDivElement | null = null;
 
   constructor() {
@@ -119,8 +118,6 @@ export class EventRecorder {
     this.highlightOverlay.style.left = `${rect.left + window.scrollX}px`;
     this.highlightOverlay.style.width = `${rect.width}px`;
     this.highlightOverlay.style.height = `${rect.height}px`;
-
-    this.highlightedElement = element;
 
     // Send inspected element metadata
     const locators = generateLocators(element);

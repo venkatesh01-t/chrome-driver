@@ -1,4 +1,4 @@
-import { TestCaseModel, TestStep, LocatorCandidate } from '../types/model';
+import { TestCaseModel, LocatorCandidate } from '../types/model';
 
 function formatLocatorTuple(candidate: LocatorCandidate): string {
   const { strategy, value } = candidate;

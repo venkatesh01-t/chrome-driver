@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selenium Python Recorder</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="panel-container">
+    <!-- Header -->
+    <header class="panel-header">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <h1>Selenium Recorder</h1>
+          <span class="subtitle">Python • Flake-Free • MV3</span>
+        </div>
+      </div>
+      <div id="statusIndicator" class="status-pill idle">
+        <span class="status-dot"></span>
+        <span class="status-text">IDLE</span>
+      </div>
+    </header>
+
+    <!-- Controls Toolbar -->
+    <section class="toolbar">
+      <button id="toggleRecordBtn" class="btn btn-record">
+        <span class="btn-icon">⏺</span>
+        <span class="btn-label">Start Recording</span>
+      </button>
+      <button id="clearBtn" class="btn btn-secondary" title="Clear all steps">
+        <span>🗑 Clear</span>
+      </button>
+    </section>
+
+    <!-- Inspection Bar -->
+    <div id="inspectionBar" class="inspection-bar hidden">
+      <span class="inspect-label">Inspected:</span>
+      <span id="inspectedTag" class="inspect-tag"></span>
+      <span id="inspectedSelector" class="inspect-selector"></span>
+    </div>
+
+    <!-- Main Tabs -->
+    <div class="tabs-header">
+      <button id="tabStepsBtn" class="tab-btn active">
+        Steps <span id="stepsCount" class="count-badge">0</span>
+      </button>
+      <button id="tabCodeBtn" class="tab-btn">
+        Python Code
+      </button>
+    </div>
+
+    <!-- Content Sections -->
+    <main class="tabs-content">
+      <!-- Steps View -->
+      <div id="stepsView" class="tab-view active">
+        <div id="stepsList" class="steps-list"></div>
+      </div>
+
+      <!-- Code View -->
+      <div id="codeView" class="tab-view hidden">
+        <div class="code-actions">
+          <span class="code-lang">Python (Selenium 4)</span>
+          <button id="copyCodeBtn" class="btn btn-sm btn-primary">
+            <span>📋 Copy Python</span>
+          </button>
+        </div>
+        <pre class="code-container"><code id="pythonCodeOutput" class="python-code"># Click Record to generate Python code...</code></pre>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="panel-footer">
+      <div class="footer-info">
+        <span>Zero <code>time.sleep()</code> • Explicit Waits</span>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./index.ts"></script>
+</body>
+</html>
