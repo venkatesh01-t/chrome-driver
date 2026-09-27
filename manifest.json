@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Selenium Python Test Recorder",
+  "version": "1.0.0",
+  "description": "Record browser interactions and automatically generate robust Python Selenium tests with explicit waits.",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_title": "Open Selenium Recorder"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/index.ts"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ]
+}

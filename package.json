@@ -1,0 +1,31 @@
+{
+  "name": "chrome-selenium-recorder",
+  "version": "1.0.0",
+  "description": "Chrome MV3 Extension to record browser actions and generate flake-free Python Selenium tests with explicit waits",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "selenium",
+    "python",
+    "chrome-extension",
+    "mv3",
+    "test-recorder",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.28",
+    "@types/chrome": "^0.0.304",
+    "@types/node": "^22.13.1",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
+  }
+}
