@@ -4,7 +4,7 @@
 ## Project Summary
 - Name: Chrome-Driver AST Recorder
 - Repository: https://github.com/venkatesh01-t/chrome-driver
-- Production Portal: https://chrome-driver-recorder.vercel.app/
+- Production Portal: https://chrome-driver-extension.vercel.app/
 - License: MIT Open Source
 - Architecture: Chrome Extension Manifest V3 Side Panel + In-Page Floating HUD (Zero side-by-side viewport distortion)
 - Supported Frameworks: Selenium 4 (Python), Playwright (Python)

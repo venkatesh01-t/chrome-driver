@@ -30,4 +30,4 @@ Allow: /
 User-agent: Omgilibot
 Allow: /
 
-Sitemap: https://chrome-driver-recorder.vercel.app/sitemap.xml
+Sitemap: https://chrome-driver-extension.vercel.app/sitemap.xml
