@@ -35,9 +35,22 @@ export class ActionNormalizer {
     this.flushInput();
     this.lastRecordedTypeStep = null;
 
-    // 2. Debounce duplicate clicks on identical element within 300ms or on element just typed into
+    // 2. Reject elements that are explicitly hidden
+    if (element && element.hasAttribute && (element.hasAttribute('hidden') || element.getAttribute('aria-hidden') === 'true')) {
+      return;
+    }
+
+    // 3. Debounce duplicate clicks on identical or ancestor/descendant elements within 400ms
     const now = Date.now();
-    if (this.lastClickElement === element && now - this.lastClickTime < 300) {
+    if (this.lastClickElement === element && now - this.lastClickTime < 400) {
+      return;
+    }
+    if (
+      this.lastClickElement &&
+      now - this.lastClickTime < 400 &&
+      typeof this.lastClickElement.contains === 'function' &&
+      (this.lastClickElement.contains(element) || element.contains(this.lastClickElement))
+    ) {
       return;
     }
     if (this.lastTypedElement === element) {

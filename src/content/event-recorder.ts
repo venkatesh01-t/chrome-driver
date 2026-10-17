@@ -14,6 +14,28 @@ function getHostSelector(host: HTMLElement): string {
   return `${tag}${cls}`;
 }
 
+export function isElementVisible(el: HTMLElement): boolean {
+  if (!el) return false;
+  if (el.hasAttribute && (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true')) return false;
+  if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    try {
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    } catch {
+      // ignore in mock environments
+    }
+  }
+  if (typeof el.getBoundingClientRect === 'function') {
+    try {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return false;
+    } catch {
+      // ignore in mock environments
+    }
+  }
+  return true;
+}
+
 export function resolveInteractiveTarget(e: Event): { target: HTMLElement; shadowHosts: string[] } {
   const path = (e.composedPath ? e.composedPath() : []) as Node[];
   let leaf = (path[0] as HTMLElement) || (e.target as HTMLElement);
@@ -35,8 +57,10 @@ export function resolveInteractiveTarget(e: Event): { target: HTMLElement; shado
   if (decorativeTags.has(leafTag) || !(leaf.matches && leaf.matches(interactiveSelector))) {
     for (const node of path) {
       if (node instanceof HTMLElement && typeof node.matches === 'function' && node.matches(interactiveSelector)) {
-        resolvedTarget = node;
-        break;
+        if (isElementVisible(node)) {
+          resolvedTarget = node;
+          break;
+        }
       }
     }
   }

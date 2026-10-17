@@ -30,7 +30,7 @@ def run_test():
             page.goto("https://github.com/venkatesh01-t?tab=repositories")
 
             # Step 1: Click "chrome-driver" in LINK
-            page.locator("xpath=//a[normalize-space()='chrome-driver']").or_(page.locator(r"a[href=\"\/venkatesh01-t\/chrome-driver\"]")).or_(page.locator("a[href*=\"chrome-driver\"]")).click()
+            page.locator("xpath=//a[normalize-space()='chrome-driver']").or_(page.locator(r"a[href=\"\/venkatesh01-t\/chrome-driver\"]")).or_(page.locator("a[href*=\"chrome-driver\"]")).locator("visible=true").first.click()
 
             # Step 2: Scroll page to 0,340.79998779296875
             page.evaluate("window.scrollBy(0, 340.79998779296875)")
@@ -39,16 +39,16 @@ def run_test():
             page.evaluate("window.scrollBy(0, 0)")
 
             # Step 4: Click "Code" in LINK
-            page.locator("xpath=//a[normalize-space()='Code']").or_(page.locator("xpath=(//a)[72]")).or_(page.locator("xpath=//header[.//h2[normalize-space()='Repository navigation']]//a")).click()
+            page.locator("xpath=//a[normalize-space()='Code']").or_(page.locator("xpath=(//a)[72]")).or_(page.locator("xpath=//header[.//h2[normalize-space()='Repository navigation']]//a[normalize-space()='Code']")).locator("visible=true").first.click()
 
-            # Step 5: Click in LINK
-            page.locator("#code-view-repo-link").or_(page.locator("xpath=(//a)[79]")).or_(page.locator(r"a[href=\"\/venkatesh01-t\/chrome-driver\"]")).click()
+            # Step 5: Click in LINK (Filtered duplicate jump-link)
+            # page.locator("#code-view-repo-link").or_(page.locator(r"a[href*=\"chrome-driver\"]")).or_(page.locator("xpath=(//a)[79]")).locator("visible=true").first.click()
 
             # Step 6: Click "venkatesh01-t" in LINK
-            page.locator("xpath=(//a)[70]").or_(page.locator("xpath=//a[normalize-space()='venkatesh01-t']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\"]")).click()
+            page.locator("xpath=(//a)[70]").or_(page.locator("xpath=//a[normalize-space()='venkatesh01-t']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\"]")).locator("visible=true").first.click()
 
             # Step 7: Extract & Print value from "Overview Repositories 17" in GENERIC
-            el = page.locator("xpath=(//div)[104]").or_(page.locator("div.Layout-main"))
+            el = page.locator("xpath=(//div)[104]").or_(page.locator("div.Layout-main")).locator("visible=true").first
             try:
                 val = el.input_value()
             except Exception:
@@ -62,10 +62,10 @@ def run_test():
             page.evaluate("window.scrollBy(0, 0)")
 
             # Step 10: Click "Projects 0" in NAVBAR
-            page.locator("xpath=(//a)[73]").or_(page.locator("xpath=//a[normalize-space()='Projects 0']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=projects\"]")).click()
+            page.locator("xpath=(//a)[73]").or_(page.locator("xpath=//a[normalize-space()='Projects 0']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=projects\"]")).locator("visible=true").first.click()
 
             # Step 11: Click "Repositories 17" in NAVBAR
-            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).click()
+            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).locator("visible=true").first.click()
 
             # Step 12: Scroll page to 0,1653.5999755859375
             page.evaluate("window.scrollBy(0, 1653.5999755859375)")
@@ -74,19 +74,19 @@ def run_test():
             page.evaluate("window.scrollBy(0, 0)")
 
             # Step 14: Click "Overview" in NAVBAR
-            page.locator("xpath=(//a)[71]").or_(page.locator("xpath=//a[normalize-space()='Overview']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\"]")).click()
+            page.locator("xpath=(//a)[71]").or_(page.locator("xpath=//a[normalize-space()='Overview']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\"]")).locator("visible=true").first.click()
 
             # Step 15: Click "Repositories 17" in NAVBAR
-            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).click()
+            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).locator("visible=true").first.click()
 
             # Step 16: Click "Projects 0" in NAVBAR
-            page.locator("xpath=(//a)[73]").or_(page.locator("xpath=//a[normalize-space()='Projects 0']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=projects\"]")).click()
+            page.locator("xpath=(//a)[73]").or_(page.locator("xpath=//a[normalize-space()='Projects 0']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=projects\"]")).locator("visible=true").first.click()
 
             # Step 17: Click "Repositories 17" in NAVBAR
-            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).click()
+            page.locator("xpath=(//a)[72]").or_(page.locator("xpath=//a[normalize-space()='Repositories 17']")).or_(page.locator(r"a[href=\"\/venkatesh01-t\?tab\=repositories\"]")).locator("visible=true").first.click()
 
             # Step 18: Click "chrome-driver" in LINK
-            page.locator("xpath=//a[normalize-space()='chrome-driver']").or_(page.locator(r"a[href=\"\/venkatesh01-t\/chrome-driver\"]")).or_(page.locator("a[href*=\"chrome-driver\"]")).click()
+            page.locator("xpath=//a[normalize-space()='chrome-driver']").or_(page.locator(r"a[href=\"\/venkatesh01-t\/chrome-driver\"]")).or_(page.locator("a[href*=\"chrome-driver\"]")).locator("visible=true").first.click()
 
             context.tracing.stop(path=str(artifact_dir / "trace.zip"))
             elapsed = time.perf_counter() - start_time

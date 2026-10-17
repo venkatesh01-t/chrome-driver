@@ -89,7 +89,7 @@ export function buildPlaywrightLocatorExpr(base: string, step: TestStep): string
   for (let i = 1; i < selectors.length; i++) {
     expr += `.or_(${base}.locator(${selectors[i]}))`;
   }
-  return expr;
+  return `${expr}.locator("visible=true").first`;
 }
 
 function sanitizeCommentText(text?: string, maxLength = 60): string {

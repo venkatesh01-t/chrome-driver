@@ -606,7 +606,26 @@ export function generateContextualAnchorLocators(
         const safeText = escapeXPath(headText);
         const nameAttr = element.getAttribute('name');
         const parentTag = parent.tagName.toLowerCase();
-        if (nameAttr && !isDynamicAttribute(nameAttr)) {
+        const elemText = (element.textContent || '').replace(/\s+/g, ' ').trim();
+        const ariaLabel = element.getAttribute('aria-label');
+
+        if (['button', 'a'].includes(tagName) && elemText && elemText.length <= 40 && !isDynamicAttribute(elemText)) {
+          candidates.push({
+            strategy: 'xpath',
+            value: `//${parentTag}[.//${headTag}[normalize-space()=${safeText}]]//${tagName}[normalize-space()=${escapeXPath(elemText)}]`,
+            isUnique: false,
+            matchCount: 0,
+            score: 93,
+          });
+        } else if (ariaLabel && !isDynamicAttribute(ariaLabel)) {
+          candidates.push({
+            strategy: 'xpath',
+            value: `//${parentTag}[.//${headTag}[normalize-space()=${safeText}]]//${tagName}[@aria-label=${escapeXPath(ariaLabel)}]`,
+            isUnique: false,
+            matchCount: 0,
+            score: 91,
+          });
+        } else if (nameAttr && !isDynamicAttribute(nameAttr)) {
           candidates.push({
             strategy: 'xpath',
             value: `//${parentTag}[.//${headTag}[normalize-space()=${safeText}]]//${tagName}[@name=${escapeXPath(nameAttr)}]`,
@@ -620,7 +639,7 @@ export function generateContextualAnchorLocators(
             value: `//${parentTag}[.//${headTag}[normalize-space()=${safeText}]]//${tagName}`,
             isUnique: false,
             matchCount: 0,
-            score: 86,
+            score: 84,
           });
         }
         break;

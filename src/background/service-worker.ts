@@ -21,6 +21,8 @@ if (typeof chrome !== 'undefined' && chrome.action && chrome.action.onClicked) {
   });
 }
 
+let lastRecordedTabId: number | null = null;
+
 // Handle messages from content scripts and side panel
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener(
@@ -49,6 +51,7 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
             chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
               const tab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://'));
               if (tab?.id) {
+                lastRecordedTabId = tab.id;
                 chrome.tabs.sendMessage(tab.id, { type: 'START_RECORDING' }).catch(() => {});
               }
             });
@@ -256,8 +259,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
 
 // Keep multi-tab recording synchronized across all tabs and navigations
 if (typeof chrome !== 'undefined' && chrome.tabs) {
-  let lastRecordedTabId: number | null = null;
-
   if (chrome.tabs.onUpdated) {
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (

@@ -1,15 +1,18 @@
 <div align="center">
 
-<!-- Animated SVG Typing Hero Banner -->
+<!-- Project Title -->
+<h1>⚡ Selenium & Playwright AI Test Recorder</h1>
+
+<!-- Animated Typing Banner (Responsive Single-Line Carousel) -->
 <a href="https://github.com/venkatesh01-t/chrome-driver">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=800&size=28&duration=3200&pause=1000&color=3B82F6&center=true&vCenter=true&multiline=true&repeat=true&width=850&height=95&lines=%E2%9A%A1+SELENIUM+%26+PLAYWRIGHT+AI+TEST+RECORDER;100%25+Deterministic+AST+%E2%80%A2+Zero+Hallucination+%E2%80%A2+Self-Healing;Zero+Side-by-Side+Split+%E2%80%A2+Floating+HUD+%E2%80%A2+Hover+Pill" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=22&duration=2800&pause=1000&color=3B82F6&center=true&vCenter=true&width=620&height=45&lines=%E2%9A%A1+Enterprise+Selenium+%26+Playwright+AI+Test+Recorder;100%25+Deterministic+AST+%E2%80%A2+Zero+Hallucination;Zero+Side-by-Side+Split+%E2%80%A2+In-Page+Floating+HUD;Generates+Simple%2C+Enterprise%2C+Pytest+%26+POM" alt="Animated Typing Banner" />
 </a>
 
 <p align="center">
   <strong>An Enterprise Chrome Manifest V3 Automation Extension that transforms live browser interactions into 100% flake-free, self-healing Python automation suites — featuring an in-page floating HUD and hover pill with zero side-by-side viewport squashing.</strong>
 </p>
 
-<!-- Dynamic Shield Badges -->
+<!-- Dynamic Status Badges -->
 <p align="center">
   <img src="https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome MV3" />
   <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5.7" />
@@ -19,6 +22,7 @@
   <img src="https://img.shields.io/badge/Accuracy-100%25_Deterministic-10B981?style=for-the-badge" alt="100% Deterministic" />
 </p>
 
+<!-- Navigation Jump Anchors -->
 <p align="center">
   <a href="#-why-this-recorder-is-different">Why It's Different</a> •
   <a href="#-system-architecture--data-flow">Architecture</a> •
@@ -35,21 +39,21 @@
 
 ## 🎯 Why This Recorder Is Different
 
-Traditional browser recorders dump brittle absolute XPaths (`/html/body/div[2]/div/button[1]`) or dynamic framework hashes (`id=":r0:"`, `class="css-1dbjc4n"`) directly into flat scripts that break on the very next page reload. Furthermore, conventional side panels squeeze the browser window into mobile viewports, breaking page layouts.
+Traditional browser recorders dump brittle absolute XPaths (`/html/body/div[2]/div/button[1]`) or dynamic framework hashes (`id=":r0:"`, `class="css-1dbjc4n"`) directly into flat scripts that break on the very next page reload. Furthermore, conventional side panels squeeze the browser window into mobile viewports, breaking responsive layouts.
 
 **`chrome-driver` (`Selenium & Playwright Python Test Recorder`)** is engineered around a **Closed-Loop Deterministic AST Pipeline** with a **Non-Intrusive Floating In-Page HUD**:
 
 | Capability | Standard Recorders (Selenium IDE / Raw Codegen) | ⚡ `chrome-driver` (This Engine) |
 | :--- | :--- | :--- |
-| **Viewport & Window Layout** | Forced side-by-side split $\rightarrow$ squeezes site into mobile layout | **100% Desktop Viewport (1920x1080)** $\rightarrow$ Zero side-by-side split |
-| **Recorder UI Ergonomics** | Rigid container taking up 50% screen | **Draggable Floating HUD** with auto-collapsing **Hover Pill Widget** |
-| **Dynamic IDs (`:r4:`, `css-19b`, UUIDs)** | Records them blindly $\rightarrow$ Breaks on next reload | **Shannon Entropy & Regex Filter** automatically rejects unstable tokens |
-| **Table Row Actions (`Approve` / `Delete`)** | Uses brittle positional index `(//button)[4]` | **Contextual Row Anchoring** (`//tr[contains(.,'Bob Smith')]//button[.='Approve']`) |
-| **Single Locator Failure at Runtime** | Immediately crashes with `NoSuchElementException` | **3-Tier Self-Healing Fallback** (`smart_find` / Playwright `.or_()`) |
-| **Shadow DOM & Cross-Frame (`<iframe>`)** | Fails to record inside encapsulated roots | **Multi-Level `composedPath()` Shadow Piercing** & Auto Frame Switching |
-| **Waiting Strategy** | Hardcoded `time.sleep()` or `implicitly_wait()` | **100% Explicit Waits (`WebDriverWait` + `EC`)** + Overlay Spinners Guard |
-| **Code Output Formats** | Single flat script | **4 Modes:** `Simple`, `Enterprise`, `Pytest`, and **Page Object Model (POM)** |
-| **Password & Secret Safety** | Hardcodes sensitive passwords in cleartext | **Automatic `os.getenv("TEST_PASSWORD")`** and `TEST_DATA` dictionary hoisting |
+| **Viewport Layout** | Forced side-by-side split → breaks desktop layouts into mobile | **100% Desktop Viewport (1920x1080)** → Zero side-by-side split |
+| **Recorder UI** | Rigid 500px sidebar squashing the webpage | **Draggable Floating HUD** with auto-collapsing **Hover Pill Widget** |
+| **Dynamic IDs** | Blindly records `:r0:`, `css-19b`, UUIDs → Breaks on next reload | **Shannon Entropy & Regex Filter** automatically rejects unstable tokens |
+| **Table Actions** | Uses brittle positional index `(//button)[4]` | **Contextual Row Anchoring** (`//tr[contains(.,'User')]//button[.='Approve']`) |
+| **Runtime Fallback** | Crashes with `NoSuchElementException` / strict mode violation | **3-Tier Self-Healing** (`smart_find` / `.locator("visible=true").first`) |
+| **Shadow & Iframes** | Fails to pierce encapsulated DOM roots | **Multi-Level `composedPath()` Piercing** & Auto Frame Switching |
+| **Wait Strategy** | Hardcoded `time.sleep()` or `implicitly_wait()` | **100% Explicit Waits (`WebDriverWait` + `EC`)** + Overlay Spinners Guard |
+| **Code Outputs** | Single flat script | **4 Modes:** `Simple`, `Enterprise`, `Pytest`, and **Page Object Model (POM)** |
+| **Secret Safety** | Hardcodes sensitive passwords in cleartext | **Automatic `os.getenv("TEST_PASSWORD")`** and `TEST_DATA` dictionary |
 
 ---
 
@@ -59,13 +63,13 @@ Traditional browser recorders dump brittle absolute XPaths (`/html/body/div[2]/d
 flowchart TB
     subgraph Browser["🌐 Active Web Page (Content Script & Floating HUD)"]
         direction TB
-        DOM["User Interaction<br/>(Click, Input, Enter, Select, Hover, Drag)"]
-        BUBBLE["Interactive Target Resolver<br/>(composedPath() SVG/Icon Bubbling & Shadow Chain)"]
-        NORM["Action Normalizer<br/>(Focus-Click Coalescing & Typing Buffer Flush)"]
-        ENTROPY["Dynamic Entropy & Noise Filter<br/>(Rejects React :r0:, Angular, Tailwind & Hex Hashes)"]
-        ANCHOR["Multi-Tier & Contextual Locator Engine<br/>(TestID • ARIA • Label • Table-Row • Shadow DOM)"]
-        VAL["Live DOM Validator & Fingerprint Scorer<br/>(Verifies matchCount === 1 & Confidence 0-100)"]
-        HUD["Isolated Shadow DOM Floating HUD<br/>(Hover Pill • 1-Click Assert • Slide-Over Code Drawer)"]
+        DOM["User Interaction (Click, Input, Select, Hover)"]
+        BUBBLE["Target Resolver & Visibility Guard<br/>(composedPath() SVG Bubbling & Hidden Link Rejection)"]
+        NORM["Action Normalizer<br/>(Ancestor Debounce & Buffer Flush)"]
+        ENTROPY["Dynamic Entropy Filter<br/>(Rejects :r0:, Tailwind & Hashes)"]
+        ANCHOR["Multi-Tier Locator Engine<br/>(TestID • ARIA • Label • Row Context)"]
+        VAL["Live DOM Fingerprint Validator<br/>(matchCount === 1 & Confidence Scorer)"]
+        HUD["Isolated Shadow DOM Floating HUD<br/>(Hover Pill • 1-Click Assert • Code Drawer)"]
 
         DOM --> BUBBLE --> NORM --> ENTROPY --> ANCHOR --> VAL
         VAL -.-> HUD
@@ -73,17 +77,17 @@ flowchart TB
 
     subgraph Extension["⚡ Chrome MV3 Core (Service Worker & State)"]
         direction TB
-        SW["Background Service Worker<br/>(Message Router & Tab Sync)"]
+        SW["Background Service Worker<br/>(Cross-Tab Sync & TabId Tracking)"]
         SM["Session Manager (AST Store)<br/>(TestCaseModel + chrome.storage.local)"]
-        UI["Slide-Over Code Drawer / Side Panel<br/>(Live Syntax Highlighting & JSON Session Backup)"]
+        UI["Slide-Over Code Drawer / Side Panel<br/>(Live Syntax Highlighting & JSON Backup)"]
 
         SW <--> SM <--> UI
     end
 
-    subgraph Compiler["🐍 Dual AST-to-Python Code Compilers"]
+    subgraph Compiler["🐍 Dual AST-to-Python Compilers"]
         direction TB
         SEL["Selenium 4 Generator<br/>(Simple • Enterprise • Pytest • POM)"]
-        PW["Playwright Python Generator<br/>(Native .or_() Chaining • Tracing • Video)"]
+        PW["Playwright Generator<br/>(Visibility Filter • Native .or_() • Tracing)"]
     end
 
     VAL ==>|"Validated TestStep AST"| SW
@@ -100,28 +104,28 @@ flowchart TB
 
 Unlike typical recorder tools that split the Chrome window into a cramped side-by-side view (breaking responsive web layouts and triggering unwanted mobile hamburger menus), this extension runs as an **encapsulated in-page Floating HUD toolbar**:
 
-```
-+---------------------------------------------------------------------------------------+
-|  BROWSER WINDOW (100% FULL DESKTOP VIEWPORT — ZERO SIDE-BY-SIDE SQUEEZING)            |
-|                                                                                       |
-|   https://my-app.com/dashboard                                                       |
-|                                                                                       |
-|   +-----------------------+        +----------------------------------------------+   |
-|   |  Standard Web Page    |        |  FLOATING RECORDER HUD (Shadow DOM Isolated) |   |
-|   |  (Desktop 1920x1080)  |        |  [ 🔴 REC 00:24 ] [ 12 Steps ] [ Assert ]    |   |
-|   |  No squeezed menus!   |        |  Last: Clicked "Submit"    [ 📋 Code ] [ ➖ ]|   |
-|   |                       |        +----------------------------------------------+   |
-|   |                       |                                                           |
-|   |                       |        [ Hover away or click minimize: ]                  |
-|   |                       |                               +-------------+             |
-|   |                       |                               | ⚡ REC (12) |  <-- Hover  |
-|   |                       |                               +-------------+      Pill   |
-+---+-----------------------+-----------------------------------------------------------+
+```text
++---------------------------------------------------------+
+|  100% FULL DESKTOP VIEWPORT (Zero Side-by-Side Split)   |
+|                                                         |
+|  https://target-app.com/dashboard                       |
+|                                                         |
+|  +--------------------+   +---------------------------+ |
+|  | Web Application    |   | FLOATING RECORDER HUD     | |
+|  | (1920x1080 canvas) |   | [🔴 REC 00:24] [12 Steps] | |
+|  | No squeezed menus! |   | [💬 Assert] [📋 Code] [➖]| |
+|  +--------------------+   +---------------------------+ |
+|                                       | (Hover away)    |
+|                                       v                 |
+|                               +---------------+         |
+|                               | 🔴 REC (12)   | <--Pill |
+|                               +---------------+         |
++---------------------------------------------------------+
 ```
 
 ### Key HUD Capabilities
-1. **Isolated Shadow DOM Root (`<automatex-recorder-hud>`):** Uses an open Shadow Root with completely encapsulated CSS. Page CSS cannot bleed into the recorder, and recorder styles never alter the website.
-2. **Auto-Collapsing Hover Pill Widget:** Collapses to a compact 40px glowing floating pill (`🔴 REC 12`). Hovering over the pill expands it into the full control bar; moving the mouse away smoothly collapses it after a 500ms grace period.
+1. **Isolated Shadow DOM Root (`<automatex-recorder-hud>`):** Open Shadow Root with completely encapsulated CSS. Page CSS cannot bleed into the recorder, and recorder styles never alter the website.
+2. **Auto-Collapsing Hover Pill Widget:** Collapses to a compact 40px glowing floating pill (`🔴 REC 12`). Hovering expands the full control bar; mouse leave smoothly collapses it after 500ms.
 3. **Draggable with Persistent Positioning:** Freely drag the widget anywhere on screen. Position coordinates persist automatically across tab switches and page navigations.
 4. **1-Click QA Assertion Mode:** Click `💬 Text`, `👁 Visible`, or `🖨 Print Val` directly on the HUD toolbar; the next clicked DOM element automatically records an assertion step.
 5. **Slide-Over Floating Code Drawer:** Inspect generated code on the fly without resizing the webpage. Switch between Selenium 4 and Playwright, toggle code styles, copy to clipboard, or download `.py` files.
@@ -131,7 +135,7 @@ Unlike typical recorder tools that split the Chrome window into a cramped side-b
 ## 🔍 Deterministic Locator & Self-Healing Engine
 
 ### 1. Mathematical Shannon Entropy & Noise Filter
-Dynamic strings generated by modern UI libraries (React 18 `useId` e.g. `:r4f:-input-894723`, Angular `ng-tns-c123`, Tailwind, or random UUIDs) are detected via:
+Dynamic strings generated by modern UI libraries (React 18 `useId` e.g. `:r4f:-input-894723`, Angular `ng-tns-c123`, Tailwind, or random UUIDs) are detected and filtered:
 - **Shannon Entropy Calculation:** High-entropy token detection ($H > 3.0$) with character-class transition rate analysis.
 - **Natural Language Protection:** Human-readable multi-word identifiers (`cost-center-code`, `username`, `profile-avatar`) are preserved with zero false positives.
 
@@ -163,6 +167,7 @@ At runtime, `scoreElementSimilarity` evaluates candidates on a deterministic `0.
 
 ### 4. Interactive Target Bubbling & Shadow DOM Traversal
 - **Decorative Leaf Bubbling:** Clicks on inner `<svg>`, `<path>`, `<span>`, or `<i>` tags walk up `event.composedPath()` to resolve the parent semantic control (`<button aria-label="Notifications">`).
+- **Visibility-Aware Selection:** Resolvers filter out hidden jump links and inaccessible DOM nodes, preventing Playwright strict mode or timeout issues.
 - **Multi-Level Shadow DOM Chains:** Deeply nested web components produce chained shadow root traversals in generated Python code:
   ```python
   curr_root = driver
@@ -249,7 +254,8 @@ python tests/live_chrome_test.py
 
 ### 3. Run Multi-Tab & Torture Execution
 ```bash
-python test.py
+# Headless live execution against real web applications
+$env:HEADLESS="true"; python test.py
 ```
 
 ---
