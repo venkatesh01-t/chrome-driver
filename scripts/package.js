@@ -1,9 +1,13 @@
 import { execSync } from 'child_process';
-import { existsSync, rmSync } from 'fs';
+import { existsSync, rmSync, copyFileSync, mkdirSync, statSync } from 'fs';
 import { resolve } from 'path';
 
 const zipName = 'selenium-recorder-extension.zip';
 const distDir = resolve(process.cwd(), 'dist');
+const docsDir = resolve(process.cwd(), 'docs');
+const demoAppSrc = resolve(process.cwd(), 'test-pages', 'demo-app.html');
+const demoAppDest = resolve(docsDir, 'demo-app.html');
+const zipDocsDest = resolve(docsDir, zipName);
 
 if (!existsSync(distDir)) {
   console.error('[ERROR] dist/ directory not found. Please run "npm run build" first.');
@@ -49,3 +53,27 @@ if (!packaged) {
 }
 
 console.log(`[SUCCESS] Extension successfully packaged: ${zipName}`);
+
+// Ensure docs directory exists
+if (!existsSync(docsDir)) {
+  mkdirSync(docsDir, { recursive: true });
+}
+
+// Synchronize zip package to docs directory for direct download portal
+try {
+  copyFileSync(zipName, zipDocsDest);
+  const sizeKb = (statSync(zipDocsDest).size / 1024).toFixed(1);
+  console.log(`[SYNC] Copied ${zipName} -> docs/${zipName} (${sizeKb} KB)`);
+} catch (err) {
+  console.error('[WARN] Failed to copy zip to docs:', err);
+}
+
+// Synchronize demo torture testbed to docs/demo-app.html
+if (existsSync(demoAppSrc)) {
+  try {
+    copyFileSync(demoAppSrc, demoAppDest);
+    console.log(`[SYNC] Copied test-pages/demo-app.html -> docs/demo-app.html`);
+  } catch (err) {
+    console.error('[WARN] Failed to copy demo-app.html to docs:', err);
+  }
+}

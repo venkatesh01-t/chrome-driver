@@ -1,0 +1,86 @@
+# Chrome-Driver AST Recorder
+> An Enterprise Chrome Manifest V3 Side Panel Extension that transforms live browser interactions into 100% flake-free, self-healing Python automation suites for Selenium 4 and Playwright.
+
+## Project Summary
+- Name: Chrome-Driver AST Recorder
+- Repository: https://github.com/venkatesh01-t/chrome-driver
+- Production Portal: https://chrome-driver-recorder.vercel.app/
+- License: MIT Open Source
+- Architecture: Chrome Extension Manifest V3 Side Panel + In-Page Floating HUD (Zero side-by-side viewport distortion)
+- Supported Frameworks: Selenium 4 (Python), Playwright (Python)
+- Export Paradigms: Simple script, Enterprise (CI/CD with Stealth & Tracing), Pytest Suite with Fixtures, Page Object Model (POM)
+
+## Key Technical Innovations
+1. **Shannon Entropy Dynamic ID Rejection**:
+   Calculates the information entropy of DOM attributes (IDs, classes, test attributes). If an ID exhibits high entropy or matches framework patterns (React `:r4f:`, Angular `ng-reflect-`, Tailwind hashed classes, UUIDv4), it is rejected as a volatile ephemeral attribute.
+2. **Contextual DOM Graph Anchoring**:
+   When an element lacks unique stable identifiers, the engine traverses ancestor tree structures to discover unique semantic anchors (such as preceding `<label>`, parent `<tr>` row text like `"Bob Smith"`, or card headings) and compiles robust XPath axes (`//tr[contains(.,"Bob Smith")]//button[.="Approve"]`).
+3. **3-Tier Self-Healing Runtime**:
+   Every recorded action generates a ranked tuple of 3 locators:
+   - Primary: High-confidence semantic locator (data-testid, aria-label, unique CSS)
+   - Fallback 1: Contextual label/table ancestor XPath
+   - Fallback 2: Stable structural fallback
+   In Selenium 4, the runtime executes `smart_find(driver, locators)` which falls back transparently across tuples with StaleElementReferenceException retries. In Playwright, it emits strict-mode safe chaining using `.or_()`.
+4. **Deep Shadow DOM & Stateful Iframe Piercing**:
+   Traverses `event.composedPath()` across arbitrary shadow boundaries (emitting CSS piercing or Playwright `>>` shadow chains) and maintains hierarchical iframe navigation context.
+5. **AST Data Parameterization**:
+   Hoists sensitive passwords and URLs into environment variables (`os.getenv("TEST_PASSWORD")`) and reusable constants.
+
+## Installation Guide
+1. Download `selenium-recorder-extension.zip` or clone https://github.com/venkatesh01-t/chrome-driver.
+2. If building from source: run `npm install && npm run build`.
+3. Open `chrome://extensions/` in Google Chrome or Chromium.
+4. Enable **Developer Mode** toggle in the top-right corner.
+5. Click **Load Unpacked** and select the `dist/` directory.
+6. Open the Chrome Side Panel, choose your framework (Selenium / Playwright), and record your browser session.
+
+## Python Code Examples
+
+### Selenium 4 Self-Healing Execution
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
+
+def smart_find(driver, locators, timeout=10):
+    for by, selector in locators:
+        try:
+            return WebDriverWait(driver, timeout, ignored_exceptions=[StaleElementReferenceException]) \
+                .until(EC.element_to_be_clickable((by, selector)))
+        except Exception:
+            continue
+    raise TimeoutException(f"Failed to resolve element across {len(locators)} locators.")
+
+driver = webdriver.Chrome()
+driver.get("https://example.com")
+# Self-healing click on Bob Smith's row
+locators = (
+    (By.XPATH, "//tr[contains(.,'Bob Smith')]//button[normalize-space()='Approve']"),
+    (By.XPATH, "//table[@id='users-table']//button[contains(@class,'approve-btn')]"),
+    (By.CSS_SELECTOR, "tr:nth-child(2) button.approve-btn")
+)
+smart_find(driver, locators).click()
+```
+
+### Playwright Python Strict-Mode Multi-Locator
+```python
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
+    page = browser.new_page()
+    page.goto("https://example.com")
+    page.locator("xpath=//tr[contains(.,'Bob Smith')]//button[normalize-space()='Approve']") \
+        .or_(page.locator("xpath=(//button)[4]")) \
+        .locator("visible=true").first.click()
+```
+
+## Frequently Asked Questions (FAQ)
+- **Q: How does this differ from Selenium IDE?**
+  A: Legacy Selenium IDE records fragile absolute XPaths and crashes on React dynamic IDs. Chrome-Driver AST Recorder uses AST compilation, Shannon entropy filtering, and 3-tier self-healing tuples.
+- **Q: Does it support Playwright Python?**
+  A: Yes, it provides 1-click dual-engine export for both Selenium 4 and Playwright Python across Simple, Enterprise, Pytest, and Page Object Model (POM) architectures.
+- **Q: Does it interfere with responsive viewport testing?**
+  A: No. It uses Chrome MV3 Side Panel and an in-page floating HUD, completely avoiding side-by-side viewport squashing.

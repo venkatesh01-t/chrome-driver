@@ -1,0 +1,33 @@
+# robots.txt for Chrome-Driver AST Recorder
+# Optimized for Googlebot, Bingbot, and 2026 AI Search Crawlers
+
+User-agent: *
+Allow: /
+Disallow: /dist/
+
+# AI Search & LLM Crawlers
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Cohere-ai
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+
+Sitemap: https://chrome-driver-recorder.vercel.app/sitemap.xml

@@ -22,8 +22,22 @@
   <img src="https://img.shields.io/badge/Accuracy-100%25_Deterministic-10B981?style=for-the-badge" alt="100% Deterministic" />
 </p>
 
+<!-- Deploy with Vercel & Live Showcase Portal -->
+<p align="center">
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvenkatesh01-t%2Fchrome-driver" target="_blank" rel="noopener">
+    <img src="https://vercel.com/button" alt="Deploy with Vercel" height="32" />
+  </a>
+  <a href="https://chrome-driver-recorder.vercel.app/" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/badge/Live_Showcase-Vercel_Portal-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Showcase on Vercel" />
+  </a>
+  <a href="https://chrome-driver-recorder.vercel.app/llms.txt" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/badge/AI_Search-llms.txt_Indexed-7C3AED?style=for-the-badge&logo=openai&logoColor=white" alt="LLMs.txt" />
+  </a>
+</p>
+
 <!-- Navigation Jump Anchors -->
 <p align="center">
+  <a href="https://chrome-driver-recorder.vercel.app/" target="_blank">🌐 Live Showcase Portal</a> •
   <a href="#-why-this-recorder-is-different">Why It's Different</a> •
   <a href="#-system-architecture--data-flow">Architecture</a> •
   <a href="#-zero-side-by-side-split-floating-in-page-hud--hover-pill">Floating HUD</a> •

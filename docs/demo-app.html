@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enterprise QA Torture Testbed - Selenium & Playwright Recorder</title>
+  <style>
+    :root { --primary: #2563eb; --slate: #0f172a; --muted: #64748b; --border: #cbd5e1; --bg: #f8fafc; }
+    body { font-family: system-ui, -apple-system, sans-serif; padding: 1.5rem; background: var(--bg); color: #1e293b; max-width: 980px; margin: 0 auto; }
+    header { background: var(--slate); color: white; padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; position: relative; }
+    nav { display: flex; align-items: center; gap: 1rem; }
+    nav a { color: #94a3b8; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+    nav a:hover, nav a.active { color: white; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
+    .card.full { grid-column: 1 / -1; }
+    .badge { display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 99px; background: #dbeafe; color: #1e40af; margin-bottom: 0.5rem; }
+    .badge.hard { background: #fee2e2; color: #991b1b; }
+    h2 { margin: 0 0 0.75rem 0; font-size: 1.15rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.88rem; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="search"], input[type="date"], select, textarea {
+      width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 5px; box-sizing: border-box; font-size: 0.9rem;
+    }
+    button { background: var(--primary); color: white; border: none; padding: 0.55rem 1rem; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+    button:hover { background: #1d4ed8; }
+    .btn-secondary { background: var(--muted); }
+    .btn-danger { background: #dc2626; }
+    .btn-success { background: #059669; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.9rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.6rem 0.75rem; text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; }
+    
+    /* Hover Dropdown Menu Trap */
+    .hover-dropdown { position: relative; display: inline-block; }
+    .hover-menu { display: none; position: absolute; right: 0; top: 100%; background: white; color: #1e293b; min-width: 170px; box-shadow: 0 8px 20px rgba(0,0,0,0.18); border-radius: 6px; padding: 0.4rem 0; z-index: 50; }
+    .hover-dropdown:hover .hover-menu { display: block; }
+    .hover-menu button { background: none; color: #1e293b; width: 100%; text-align: left; border-radius: 0; padding: 0.5rem 1rem; }
+    .hover-menu button:hover { background: #f1f5f9; }
+
+    /* Custom React-Select Style Div Combobox */
+    .custom-select-wrapper { position: relative; user-select: none; }
+    .custom-select-trigger { border: 1px solid var(--border); padding: 0.5rem 0.75rem; border-radius: 5px; cursor: pointer; display: flex; justify-content: space-between; background: #fff; }
+    .custom-options { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: white; border: 1px solid var(--border); border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 40; }
+    .custom-options.open { display: block; }
+    .custom-option { padding: 0.5rem 0.75rem; cursor: pointer; }
+    .custom-option:hover { background: #eff6ff; color: var(--primary); }
+
+    /* ContentEditable & Drag-Drop */
+    .rich-editor { min-height: 70px; border: 1px solid var(--border); border-radius: 5px; padding: 0.6rem; background: #fff; }
+    .drop-zone { border: 2px dashed #94a3b8; border-radius: 6px; padding: 0.8rem; text-align: center; background: #f8fafc; margin-top: 0.5rem; }
+    .draggable-chip { display: inline-block; padding: 0.35rem 0.75rem; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-weight: 600; cursor: grab; margin-bottom: 0.5rem; }
+
+    /* Blocking Overlay Spinner (Click Intercepted Trap) */
+    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 999; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; }
+    
+    /* Toast Banner */
+    #status-banner { padding: 0.75rem 1rem; background: #ecfdf5; border: 1px solid #10b981; color: #065f46; border-radius: 6px; margin-bottom: 1.5rem; font-weight: 600; display: flex; justify-content: space-between; }
+    
+    .scroll-spacer { height: 320px; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); border-radius: 8px; margin: 1.5rem 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: 600; }
+    dialog { border: none; border-radius: 8px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25); min-width: 320px; }
+    dialog::backdrop { background: rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body>
+
+  <div id="loading-overlay">⏳ Processing Async Request (Overlay Intercept Check)...</div>
+
+  <!-- Header with Hover-Only Dropdown & SVG Icon Button -->
+  <header>
+    <div style="font-weight: 700; font-size: 1.15rem;">⚡ Enterprise QA Torture Testbed</div>
+    <nav>
+      <a href="#home" class="active">Home</a>
+      <a href="#dashboard">Dashboard</a>
+      <button data-testid="menu-toggle" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;">Menu</button>
+
+      <!-- Case 1: Pure CSS Hover Menu -->
+      <div class="hover-dropdown" id="profile-hover-trigger">
+        <button type="button" class="btn-secondary" aria-label="User Profile Menu">Profile ▾</button>
+        <div class="hover-menu" role="menu">
+          <button type="button" role="menuitem" onclick="setStatus('Opened API Keys')">API Keys</button>
+          <button type="button" role="menuitem" onclick="setStatus('Opened Audit Logs')">Audit Logs</button>
+          <button type="button" role="menuitem" onclick="setStatus('Signed Out')">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Case 2: SVG-Only Button (Clicks land on <path> or <svg>, not <button>) -->
+      <button type="button" aria-label="Notifications" title="View Notifications" onclick="setStatus('Notifications Clicked')" style="background:#334155; padding:0.45rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Live Action Verification Banner -->
+  <div id="status-banner" role="status" aria-live="polite">
+    <span>Last Action: <strong id="last-action-text">Ready for recording</strong></span>
+    <span id="step-counter">Events: 0</span>
+  </div>
+
+  <!-- Search & Enter Key Coalescing -->
+  <div class="card full" role="search">
+    <span class="badge">Keyboard & Debounce</span>
+    <h2>1. Global Search & Enter Key Submission</h2>
+    <div class="form-group" style="margin-bottom:0;">
+      <label for="search-input">Global Search</label>
+      <input id="search-input" name="search_term" type="search" placeholder="Type query and press Enter..." 
+             onkeydown="if(event.key==='Enter') setStatus('Searched: ' + this.value)" />
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Standard Account Form (Preserves existing E2E selectors + adds Date/Range/Radio) -->
+    <div class="card">
+      <span class="badge">Standard Inputs</span>
+      <h2>2. Account & Profile Form</h2>
+      <form id="profileForm" onsubmit="event.preventDefault(); setStatus('Profile Saved');">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" name="user_login" type="text" placeholder="Enter username" />
+        </div>
+        <div class="form-group">
+          <label for="email">Work Email</label>
+          <input id="email" name="user_email" type="email" placeholder="name@company.com" />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input id="phone" name="phone_number" type="tel" placeholder="+1 234 567 890" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" name="user_password" type="password" placeholder="Enter password" />
+        </div>
+        <div class="form-group">
+          <label for="plan-selection">Subscription Plan (Native Select)</label>
+          <select id="plan-selection" name="plan" onchange="setStatus('Plan: ' + this.value)">
+            <option value="free">Community Free</option>
+            <option value="pro" selected>Professional ($29/mo)</option>
+            <option value="enterprise">Enterprise Custom</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="start-date">Target Launch Date</label>
+          <input id="start-date" name="launch_date" type="date" onchange="setStatus('Date: ' + this.value)" />
+        </div>
+        <div class="form-group">
+          <label for="concurrency-slider">Worker Concurrency: <span id="slider-val">5</span></label>
+          <input id="concurrency-slider" type="range" min="1" max="20" value="5" 
+                 oninput="document.getElementById('slider-val').textContent = this.value"
+                 onchange="setStatus('Concurrency: ' + this.value)" />
+        </div>
+        <div class="form-group">
+          <label>Deployment Region (Radio Group)</label>
+          <div style="display:flex; gap:1rem; font-weight:normal;">
+            <label><input type="radio" name="region" value="us-east" checked onchange="setStatus('Region: us-east')"> US-East</label>
+            <label><input type="radio" name="region" value="eu-central" onchange="setStatus('Region: eu-central')"> EU-Central</label>
+            <label><input type="radio" name="region" value="ap-south" onchange="setStatus('Region: ap-south')"> AP-South</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="avatar-upload">Profile Picture</label>
+          <input id="avatar-upload" name="avatar" type="file" accept="image/*" onchange="setStatus('File uploaded')" />
+        </div>
+        <div class="form-group">
+          <label><input id="remember-me" name="remember" type="checkbox" onchange="setStatus('Remember: ' + this.checked)" /> Remember me on this device</label>
+        </div>
+        <button id="login-button" type="button" onclick="setStatus('Account Info Saved')">Save Account Info</button>
+        <button id="open-dialog-btn" type="button" class="btn-secondary" onclick="document.getElementById('confirm-dialog').showModal()">Open Dialog</button>
+      </form>
+    </div>
+
+    <!-- Hard Case: Entropy Traps, Custom Combobox, ContentEditable -->
+    <div class="card">
+      <span class="badge hard">Hard Mode: Dynamic IDs & Custom UI</span>
+      <h2>3. Anti-Hallucination & Entropy Traps</h2>
+      <p style="font-size:0.84rem; color:var(--muted);">These inputs regenerate random React/Tailwind IDs & classes on every load. Your engine MUST reject the dynamic ID and anchor to the label or placeholder.</p>
+
+      <!-- Trap A: Mutating ID with NO name or data-testid (Must use Label anchor) -->
+      <div class="form-group" id="entropy-container">
+        <label>Cost Center Code</label>
+        <input id=" :r4f:-input-894723 " class="css-19bb58m sc-a84f92" type="text" placeholder="e.g. CC-900" 
+               onchange="setStatus('Cost Center: ' + this.value)" />
+      </div>
+
+      <!-- Trap B: Custom Div-Based Dropdown (Non-Select Combobox) -->
+      <div class="form-group">
+        <label id="env-label">Target Environment (Custom Div Select)</label>
+        <div class="custom-select-wrapper">
+          <div class="custom-select-trigger" role="combobox" aria-labelledby="env-label" aria-expanded="false" tabindex="0"
+               onclick="toggleCustomSelect()">
+            <span id="custom-select-value">Select environment...</span>
+            <span>▾</span>
+          </div>
+          <div class="custom-options" id="custom-options-list" role="listbox">
+            <div class="custom-option" role="option" onclick="selectCustomOption('Staging Cluster')">Staging Cluster</div>
+            <div class="custom-option" role="option" onclick="selectCustomOption('Production Blue')">Production Blue</div>
+            <div class="custom-option" role="option" onclick="selectCustomOption('DR Failover')">DR Failover</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trap C: ContentEditable Rich Text Area -->
+      <div class="form-group">
+        <label id="notes-label">Release Notes (ContentEditable Div)</label>
+        <div class="rich-editor" contenteditable="true" role="textbox" aria-labelledby="notes-label" 
+             onblur="setStatus('Notes edited: ' + this.innerText.trim())">Type release summary here...</div>
+      </div>
+
+      <!-- Trap D: Stale Element & Async Overlay Trap -->
+      <div class="form-group">
+        <label>Async DOM Re-render & Overlay Trap</label>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button id="input-948271" name="btn_quick_sync" class="btn-success" data-testid="sync-now-btn" onclick="triggerOverlaySync()">Sync Data (600ms Overlay)</button>
+          <div id="stale-btn-mount">
+            <button type="button" class="btn-secondary" onclick="recreateStaleButton()">Mutate DOM Node (Stale Test)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trap E: Drag & Drop + Double Click -->
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Gesture Test (Double-Click & Drag-and-Drop)</label>
+        <button type="button" class="btn-secondary" ondblclick="setStatus('Double-Click Verified!')">Double-Click Me</button>
+        <div style="margin-top:0.5rem;">
+          <div id="drag-source" class="draggable-chip" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', 'CHIP_1')">⠿ Drag Ticket #402</div>
+          <div id="drop-target" class="drop-zone" ondragover="event.preventDefault()" ondrop="handleDrop(event)">Drop Ticket Here</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hard Case 4: Data Table with Identical Action Buttons Per Row -->
+  <div class="card full">
+    <span class="badge hard">Hard Mode: Ambiguous Sibling Selectors</span>
+    <h2>4. Multi-Row Data Grid (Contextual Row Anchoring Test)</h2>
+    <p style="font-size:0.84rem; color:var(--muted);">Every row has identical <code>Approve</code> and <code>Revoke</code> buttons with no <code>id</code> or <code>data-testid</code>. Clicking "Approve" on Bob Smith's row must generate a row-anchored XPath (`//tr[contains(.,'Bob Smith')]//button[normalize-space()='Approve']`).</p>
+    <table id="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Alice Johnson</td>
+          <td>alice@company.com</td>
+          <td>Admin</td>
+          <td><span class="status-cell">Active</span></td>
+          <td>
+            <button type="button" onclick="updateRowStatus(this, 'Approved')">Approve</button>
+            <button type="button" class="btn-danger" onclick="updateRowStatus(this, 'Revoked')">Revoke</button>
+          </td>
+        </tr>
+        <tr>
+          <td>Bob Smith</td>
+          <td>bob@company.com</td>
+          <td>Editor</td>
+          <td><span class="status-cell">Pending</span></td>
+          <td>
+            <button type="button" onclick="updateRowStatus(this, 'Approved')">Approve</button>
+            <button type="button" class="btn-danger" onclick="updateRowStatus(this, 'Revoked')">Revoke</button>
+          </td>
+        </tr>
+        <tr>
+          <td>Charlie Dev</td>
+          <td>charlie@company.com</td>
+          <td>Viewer</td>
+          <td><span class="status-cell">Locked</span></td>
+          <td>
+            <button type="button" onclick="updateRowStatus(this, 'Approved')">Approve</button>
+            <button type="button" class="btn-danger" onclick="updateRowStatus(this, 'Revoked')">Revoke</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Hard Case 5: Nested Shadow DOM + Iframe Side-by-Side -->
+  <div class="grid">
+    <div class="card">
+      <span class="badge hard">Hard Mode: Nested Shadow DOM</span>
+      <h2>5. Nested Web Components (2-Level Shadow Root)</h2>
+      <p style="font-size:0.84rem; color:var(--muted);">Tests Shadow DOM piercing inside <code>&lt;gt-ess-portal&gt;</code> &rarr; <code>&lt;gt-attendance-widget&gt;</code>.</p>
+      <gt-ess-portal id="ess-host"></gt-ess-portal>
+    </div>
+
+    <div class="card">
+      <span class="badge hard">Hard Mode: Cross-Frame Context</span>
+      <h2>6. Embedded Payment Iframe</h2>
+      <p style="font-size:0.84rem; color:var(--muted);">Tests whether the recorder detects interactions inside an <code>&lt;iframe&gt;</code> and emits frame-switching code.</p>
+      <iframe id="payment-iframe" name="stripe_checkout_frame" title="Secure Payment Frame"
+              style="width:100%; height:175px; border:1px solid #cbd5e1; border-radius:6px;"
+              srcdoc="
+                <!DOCTYPE html>
+                <html>
+                <body style='font-family:sans-serif; padding:12px; margin:0; background:#f8fafc;'>
+                  <div style='margin-bottom:8px;'>
+                    <label for='cc-num' style='display:block; font-size:12px; font-weight:600; margin-bottom:4px;'>Card Number (Inside Iframe)</label>
+                    <input id='cc-num' name='card_number' type='text' placeholder='4242 •••• •••• 4242' style='width:100%; padding:6px; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:4px;' />
+                  </div>
+                  <div style='margin-bottom:8px;'>
+                    <label for='cc-cvc' style='display:block; font-size:12px; font-weight:600; margin-bottom:4px;'>CVC</label>
+                    <input id='cc-cvc' data-testid='iframe-cvc' type='text' placeholder='123' style='width:80px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;' />
+                  </div>
+                  <button id='iframe-pay-btn' type='button' style='background:#059669; color:white; border:none; padding:7px 14px; border-radius:4px; font-weight:600; cursor:pointer;'
+                          onclick='this.textContent=&quot;Paid ✔&quot;; window.parent.postMessage(&quot;Iframe Payment Submitted&quot;, &quot;*&quot;);'>Authorize $29.00</button>
+                </body>
+                </html>
+              ">
+      </iframe>
+    </div>
+  </div>
+
+  <!-- Tab Navigation (Dynamic Mount/Unmount) -->
+  <div class="card full">
+    <span class="badge">SPA Tabs</span>
+    <h2>7. Dynamic Tab Panel</h2>
+    <div style="display:flex; gap:0.5rem; border-bottom:2px solid #e2e8f0; margin-bottom:1rem;" role="tablist">
+      <button class="btn-secondary" role="tab" aria-selected="true" data-tab="tab-overview" onclick="switchTab('overview', this)">Overview</button>
+      <button class="btn-secondary" role="tab" aria-selected="false" data-tab="tab-users" onclick="switchTab('users', this)">Users</button>
+      <button class="btn-secondary" role="tab" aria-selected="false" data-tab="tab-billing" onclick="switchTab('billing', this)">Billing</button>
+    </div>
+    <div id="tab-content" style="padding:0.5rem 0;">
+      <p>Active tab contents displayed here.</p>
+    </div>
+  </div>
+
+  <!-- Modal Dialog -->
+  <dialog id="confirm-dialog">
+    <h3>Confirm Action</h3>
+    <p>Are you sure you want to proceed with this update?</p>
+    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+      <button id="modal-cancel" class="btn-secondary" onclick="document.getElementById('confirm-dialog').close(); setStatus('Modal Cancelled')">Cancel</button>
+      <button id="modal-confirm" onclick="document.getElementById('confirm-dialog').close(); setStatus('Modal Confirmed')">Confirm</button>
+    </div>
+  </dialog>
+
+  <!-- Scroll Section -->
+  <div class="scroll-spacer">↓ Scroll down to view below-the-fold lazy actions ↓</div>
+
+  <div class="card full">
+    <h2>8. Footer Actions (Scrolled Section)</h2>
+    <button id="deep-scroll-btn" type="button" onclick="setStatus('Completed All Registrations')">Complete All Registrations</button>
+  </div>
+
+  <script>
+    let eventCount = 0;
+    function setStatus(msg) {
+      eventCount++;
+      document.getElementById('last-action-text').textContent = msg;
+      document.getElementById('step-counter').textContent = 'Events: ' + eventCount;
+    }
+
+    window.addEventListener('message', (e) => {
+      if (typeof e.data === 'string') setStatus(e.data);
+    });
+
+    // Randomize dynamic IDs on every page load to defeat naive ID recording
+    window.addEventListener('DOMContentLoaded', () => {
+      const randHex = Math.random().toString(16).substring(2, 8);
+      const entropyInput = document.querySelector('#entropy-container input');
+      if (entropyInput) {
+        entropyInput.id = `:r${randHex}:-input-${Math.floor(100000 + Math.random() * 900000)}`;
+      }
+      const syncBtn = document.querySelector('[data-testid="sync-now-btn"]');
+      if (syncBtn) {
+        syncBtn.id = `input-${Math.floor(100000 + Math.random() * 900000)}`;
+      }
+    });
+
+    // Custom Combobox Logic
+    function toggleCustomSelect() {
+      const list = document.getElementById('custom-options-list');
+      list.classList.toggle('open');
+    }
+    function selectCustomOption(val) {
+      document.getElementById('custom-select-value').textContent = val;
+      document.getElementById('custom-options-list').classList.remove('open');
+      setStatus('Selected Env: ' + val);
+    }
+
+    // Table Row Action Handler
+    function updateRowStatus(btn, statusText) {
+      const row = btn.closest('tr');
+      const userName = row.cells[0].textContent;
+      row.querySelector('.status-cell').textContent = statusText;
+      setStatus(`${statusText}: ${userName}`);
+    }
+
+    // Async Overlay Blocking Simulation
+    function triggerOverlaySync() {
+      const overlay = document.getElementById('loading-overlay');
+      overlay.style.display = 'flex';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        setStatus('Sync Completed After Overlay');
+      }, 600);
+    }
+
+    // Stale Element Reference Simulation (Destroys and replaces button node)
+    let staleCounter = 1;
+    function recreateStaleButton() {
+      const mount = document.getElementById('stale-btn-mount');
+      mount.innerHTML = '';
+      setTimeout(() => {
+        const newBtn = document.createElement('button');
+        newBtn.type = 'button';
+        newBtn.className = 'btn-secondary';
+        newBtn.textContent = `Mutated Node v${++staleCounter}`;
+        newBtn.onclick = recreateStaleButton;
+        mount.appendChild(newBtn);
+        setStatus(`DOM Node Recreated (v${staleCounter})`);
+      }, 150);
+    }
+
+    // Drag and Drop Handler
+    function handleDrop(e) {
+      e.preventDefault();
+      const data = e.dataTransfer.getData('text/plain');
+      e.target.textContent = `Dropped: ${data} ✔`;
+      e.target.style.background = '#dcfce7';
+      setStatus(`Dragged ${data}`);
+    }
+
+    // Dynamic Tab Switcher
+    function switchTab(tab, btn) {
+      document.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', 'false'));
+      btn.setAttribute('aria-selected', 'true');
+      const container = document.getElementById('tab-content');
+      if (tab === 'billing') {
+        container.innerHTML = `<button type="button" data-testid="download-invoice-btn" onclick="setStatus('Invoice Downloaded')">Download Latest Invoice (PDF)</button>`;
+      } else if (tab === 'users') {
+        container.innerHTML = `<input type="text" aria-label="Filter active users" placeholder="Filter active users..." onchange="setStatus('Filtered: ' + this.value)" />`;
+      } else {
+        container.innerHTML = `<p>Active tab contents displayed here.</p>`;
+      }
+      setStatus('Switched Tab: ' + tab);
+    }
+
+    // Define 2-Level Nested Shadow DOM Web Components
+    class GtAttendanceWidget extends HTMLElement {
+      constructor() {
+        super();
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `
+          <style>
+            .inner-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 6px; margin-top: 8px; }
+            button { background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+          </style>
+          <div class="inner-box">
+            <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:#1e3a8a;">Inner Shadow Root (#2)</div>
+            <button id="shadow-swipe-btn" data-testid="ess-swipe-in" type="button">Swipe In (Shadow Level 2)</button>
+          </div>
+        `;
+        shadow.getElementById('shadow-swipe-btn').addEventListener('click', () => {
+          shadow.getElementById('shadow-swipe-btn').textContent = 'Swiped In ✔';
+          setStatus('Shadow Level 2 Swipe Recorded');
+        });
+      }
+    }
+    customElements.define('gt-attendance-widget', GtAttendanceWidget);
+
+    class GtEssPortal extends HTMLElement {
+      constructor() {
+        super();
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `
+          <style>
+            .outer-box { background: #f8fafc; border: 1px dashed #64748b; padding: 12px; border-radius: 6px; }
+            input { width: 100%; padding: 6px; margin-bottom: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 4px; }
+          </style>
+          <div class="outer-box">
+            <div style="font-size:12px; font-weight:600; margin-bottom:6px;">Outer Shadow Root (#1)</div>
+            <input id="shadow-emp-code" type="text" placeholder="Enter Employee ID inside Shadow DOM..." />
+            <gt-attendance-widget></gt-attendance-widget>
+          </div>
+        `;
+        shadow.getElementById('shadow-emp-code').addEventListener('change', (e) => {
+          setStatus('Shadow Input: ' + e.target.value);
+        });
+      }
+    }
+    customElements.define('gt-ess-portal', GtEssPortal);
+  </script>
+</body>
+</html>
