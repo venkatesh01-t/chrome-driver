@@ -389,15 +389,40 @@ body {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.delete-step-btn {
+.step-controls {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.reorder-step-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.reorder-step-btn:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.delete-step-btn {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
+  line-height: 1;
 }
 
 .delete-step-btn:hover {
@@ -407,6 +432,34 @@ body {
 
 .step-details {
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.3px;
+}
+
+.step-edit-input {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  color: #a7f3d0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.step-edit-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
 }
 
 .step-value {
@@ -441,6 +494,42 @@ body {
   color: var(--text-dim);
 }
 
+.locator-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-test-locator {
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-radius: 3px;
+  color: #38bdf8;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-test-locator:hover {
+  background: rgba(14, 165, 233, 0.3);
+  color: #7dd3fc;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
+}
+
+.btn-test-locator.success {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.btn-test-locator.fail {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
 .btn-copy-locator {
   background: none;
   border: 1px solid var(--border-color);
@@ -456,6 +545,32 @@ body {
   background-color: var(--bg-card);
   color: var(--text-main);
   border-color: var(--accent-blue);
+}
+
+/* Step Action Selector */
+.step-action-select {
+  background: rgba(30, 41, 59, 0.9);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 4px;
+  outline: none;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: all 0.15s ease;
+}
+
+.step-action-select:hover {
+  border-color: var(--accent-blue);
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
+.step-action-select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
 }
 
 .locator-select {

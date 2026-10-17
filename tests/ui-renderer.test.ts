@@ -29,7 +29,11 @@ describe('Side Panel UI Renderer', () => {
     const html = renderStepCard(step);
 
     expect(html).toContain('step-card');
-    expect(html).toContain('TYPE');
+    expect(html).toContain('step-action-select');
+    expect(html).toContain('value="type" selected');
+    expect(html).toContain('btn-test-locator');
+    expect(html).toContain('reorder-step-btn');
+    expect(html).toContain('step-edit-input');
     expect(html).toContain('&lt;input&gt;');
     expect(html).toContain('admin_test');
     expect(html).toContain('id: username');

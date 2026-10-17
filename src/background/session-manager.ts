@@ -128,6 +128,55 @@ export class SessionManager {
     }
   }
 
+  public async updateStepAction(stepId: string, action: import('../types/model').ActionType): Promise<void> {
+    if (!this._activeTestCase) return;
+    const step = this._activeTestCase.steps.find((s) => s.id === stepId);
+    if (step) {
+      step.action = action;
+      if (action === 'assert_visible') {
+        step.assertExpected = undefined;
+      } else if (action === 'assert_text' && !step.assertExpected) {
+        step.assertExpected = step.target.text || step.value || '';
+      }
+      this._activeTestCase.updatedAt = Date.now();
+      await this.persist();
+    }
+  }
+
+  public async reorderStep(stepId: string, direction: 'up' | 'down'): Promise<void> {
+    if (!this._activeTestCase) return;
+    const steps = this._activeTestCase.steps;
+    const index = steps.findIndex((s) => s.id === stepId);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const temp = steps[index];
+      steps[index] = steps[index - 1];
+      steps[index - 1] = temp;
+    } else if (direction === 'down' && index < steps.length - 1) {
+      const temp = steps[index];
+      steps[index] = steps[index + 1];
+      steps[index + 1] = temp;
+    }
+
+    steps.forEach((s, idx) => {
+      s.stepNumber = idx + 1;
+    });
+    this._activeTestCase.updatedAt = Date.now();
+    await this.persist();
+  }
+
+  public async updateStepValue(stepId: string, value?: string, assertExpected?: string): Promise<void> {
+    if (!this._activeTestCase) return;
+    const step = this._activeTestCase.steps.find((s) => s.id === stepId);
+    if (step) {
+      if (value !== undefined) step.value = value;
+      if (assertExpected !== undefined) step.assertExpected = assertExpected;
+      this._activeTestCase.updatedAt = Date.now();
+      await this.persist();
+    }
+  }
+
   public async clearSession(): Promise<void> {
     this._isRecording = false;
     this._activeTestCase = null;

@@ -216,6 +216,84 @@ function attachStepEventListeners(): void {
       });
     });
   });
+
+  // Step Action Selector Change
+  document.querySelectorAll<HTMLSelectElement>('.step-action-select').forEach((select) => {
+    select.addEventListener('change', () => {
+      const stepId = select.getAttribute('data-step-id');
+      const action = select.value as import('../types/model').ActionType;
+      if (stepId && action && typeof chrome !== 'undefined' && chrome.runtime) {
+        chrome.runtime.sendMessage(
+          { type: 'UPDATE_STEP_ACTION', payload: { stepId, action } },
+          () => refreshState()
+        );
+      }
+    });
+  });
+
+  // Live Test Locator Button
+  document.querySelectorAll<HTMLButtonElement>('.btn-test-locator').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const strategy = btn.getAttribute('data-strategy') || 'css';
+      const value = btn.getAttribute('data-val') || '';
+      if (!value || typeof chrome === 'undefined' || !chrome.runtime) return;
+
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<span>⏳ Testing</span>';
+
+      chrome.runtime.sendMessage(
+        { type: 'TEST_LOCATOR', payload: { strategy, value } },
+        (res) => {
+          if (res && res.matchCount > 0) {
+            btn.className = 'btn-test-locator success';
+            btn.innerHTML = `<span>✓ ${res.matchCount} Found</span>`;
+          } else {
+            btn.className = 'btn-test-locator fail';
+            btn.innerHTML = '<span>✖ 0 Found</span>';
+          }
+          setTimeout(() => {
+            btn.className = 'btn-test-locator';
+            btn.innerHTML = origHtml;
+          }, 2500);
+        }
+      );
+    });
+  });
+
+  // Reorder Step Buttons (Move Up / Down)
+  document.querySelectorAll<HTMLButtonElement>('.reorder-step-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const stepId = btn.getAttribute('data-step-id');
+      const direction = btn.getAttribute('data-dir') as 'up' | 'down';
+      if (stepId && direction && typeof chrome !== 'undefined' && chrome.runtime) {
+        chrome.runtime.sendMessage(
+          { type: 'REORDER_STEP', payload: { stepId, direction } },
+          () => refreshState()
+        );
+      }
+    });
+  });
+
+  // Editable Step Inputs (Value / Assertion text)
+  document.querySelectorAll<HTMLInputElement>('.step-edit-input').forEach((input) => {
+    const handleUpdate = () => {
+      const stepId = input.getAttribute('data-step-id');
+      const field = input.getAttribute('data-field');
+      const val = input.value;
+      if (stepId && typeof chrome !== 'undefined' && chrome.runtime) {
+        const payload: { stepId: string; value?: string; assertExpected?: string } = { stepId };
+        if (field === 'value') payload.value = val;
+        if (field === 'assertExpected') payload.assertExpected = val;
+        chrome.runtime.sendMessage(
+          { type: 'UPDATE_STEP_VALUE', payload },
+          () => refreshState()
+        );
+      }
+    };
+    input.addEventListener('change', handleUpdate);
+  });
 }
 
 // Toggle Recording Handler

@@ -1,4 +1,4 @@
-import { TestCaseModel, TestStep, LocatorCandidate } from './model';
+import { TestCaseModel, TestStep, LocatorCandidate, ActionType } from './model';
 
 export type MessageType =
   | 'START_RECORDING'
@@ -6,6 +6,9 @@ export type MessageType =
   | 'RECORDED_STEP'
   | 'DELETE_STEP'
   | 'UPDATE_STEP_LOCATOR'
+  | 'UPDATE_STEP_ACTION'
+  | 'REORDER_STEP'
+  | 'UPDATE_STEP_VALUE'
   | 'CLEAR_SESSION'
   | 'GET_SESSION_STATE'
   | 'SESSION_STATE_UPDATE'
@@ -17,7 +20,9 @@ export type MessageType =
   | 'UPDATE_ENGINE'
   | 'ADD_NAVIGATE_STEP'
   | 'ADD_WAIT_STEP'
-  | 'ADD_TAB_STEP';
+  | 'ADD_TAB_STEP'
+  | 'TEST_LOCATOR'
+  | 'TEST_LOCATOR_RESULT';
 
 export interface StartRecordingPayload {
   tabId?: number;
@@ -40,6 +45,34 @@ export interface DeleteStepPayload {
 export interface UpdateStepLocatorPayload {
   stepId: string;
   locatorIndex: number;
+}
+
+export interface UpdateStepActionPayload {
+  stepId: string;
+  action: ActionType;
+}
+
+export interface ReorderStepPayload {
+  stepId: string;
+  direction: 'up' | 'down';
+}
+
+export interface UpdateStepValuePayload {
+  stepId: string;
+  value?: string;
+  assertExpected?: string;
+}
+
+export interface TestLocatorPayload {
+  strategy: string;
+  value: string;
+}
+
+export interface TestLocatorResultPayload {
+  success: boolean;
+  matchCount: number;
+  tagName?: string;
+  text?: string;
 }
 
 export interface SessionStateUpdatePayload {
@@ -72,6 +105,9 @@ export type ExtensionMessage =
   | { type: 'RECORDED_STEP'; payload: RecordedStepPayload }
   | { type: 'DELETE_STEP'; payload: DeleteStepPayload }
   | { type: 'UPDATE_STEP_LOCATOR'; payload: UpdateStepLocatorPayload }
+  | { type: 'UPDATE_STEP_ACTION'; payload: UpdateStepActionPayload }
+  | { type: 'REORDER_STEP'; payload: ReorderStepPayload }
+  | { type: 'UPDATE_STEP_VALUE'; payload: UpdateStepValuePayload }
   | { type: 'CLEAR_SESSION' }
   | { type: 'GET_SESSION_STATE' }
   | { type: 'SESSION_STATE_UPDATE'; payload: SessionStateUpdatePayload }
@@ -83,4 +119,7 @@ export type ExtensionMessage =
   | { type: 'UPDATE_ENGINE'; payload: { engine: 'selenium' | 'playwright' } }
   | { type: 'ADD_NAVIGATE_STEP'; payload: { url: string } }
   | { type: 'ADD_WAIT_STEP'; payload: { seconds: number } }
-  | { type: 'ADD_TAB_STEP'; payload: { action: 'switch_tab' | 'close_tab'; url?: string } };
+  | { type: 'ADD_TAB_STEP'; payload: { tabIndex?: number; tabTitle?: string; tabUrl?: string; url?: string; action?: 'switch_tab' | 'close_tab' } }
+  | { type: 'TEST_LOCATOR'; payload: TestLocatorPayload }
+  | { type: 'TEST_LOCATOR_RESULT'; payload: TestLocatorResultPayload };
+

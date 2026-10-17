@@ -5,7 +5,10 @@ import { TestCaseModel, TestStep, LocatorCandidate } from '../types/model';
  */
 export function formatPlaywrightLocator(candidate: LocatorCandidate): string {
   const { strategy, value } = candidate;
+  const hasBackslash = value.includes('\\');
   const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const rawPrefix = hasBackslash ? 'r' : '';
+  const formattedVal = hasBackslash ? `${rawPrefix}"${value.replace(/"/g, '\\"')}"` : `"${escaped}"`;
 
   switch (strategy) {
     case 'id':
@@ -19,7 +22,7 @@ export function formatPlaywrightLocator(candidate: LocatorCandidate): string {
       return `"xpath=${escaped}"`;
     case 'css':
     default:
-      return `"${escaped}"`;
+      return formattedVal;
   }
 }
 

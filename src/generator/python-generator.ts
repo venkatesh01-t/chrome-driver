@@ -2,24 +2,27 @@ import { TestCaseModel, TestStep, LocatorCandidate } from '../types/model';
 
 export function formatLocatorTuple(candidate: LocatorCandidate): string {
   const { strategy, value } = candidate;
+  const hasBackslash = value.includes('\\');
   const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const rawPrefix = hasBackslash ? 'r' : '';
+  const formattedVal = hasBackslash ? `${rawPrefix}"${value.replace(/"/g, '\\"')}"` : `"${escaped}"`;
 
   switch (strategy) {
     case 'id':
-      return `(By.ID, "${escaped}")`;
+      return `(By.ID, ${formattedVal})`;
     case 'name':
-      return `(By.NAME, "${escaped}")`;
+      return `(By.NAME, ${formattedVal})`;
     case 'css':
-      return `(By.CSS_SELECTOR, "${escaped}")`;
+      return `(By.CSS_SELECTOR, ${formattedVal})`;
     case 'xpath':
     case 'absolute-xpath':
-      return `(By.XPATH, "${escaped}")`;
+      return `(By.XPATH, ${formattedVal})`;
     case 'data-testid':
       return `(By.CSS_SELECTOR, "[data-testid=\\"${escaped}\\"]")`;
     case 'aria-label':
       return `(By.CSS_SELECTOR, "[aria-label=\\"${escaped}\\"]")`;
     default:
-      return `(By.CSS_SELECTOR, "${escaped}")`;
+      return `(By.CSS_SELECTOR, ${formattedVal})`;
   }
 }
 

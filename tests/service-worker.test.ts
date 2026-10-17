@@ -101,4 +101,58 @@ describe('SessionManager (Background Core)', () => {
     await sessionManager.deleteStep(step.id);
     expect(sessionManager.activeTestCase?.steps.length).toBe(0);
   });
+
+  it('supports reordering steps up and down with automatic step numbering', async () => {
+    await sessionManager.startRecording({ url: 'https://example.com' });
+
+    const stepA = createTestStep({
+      stepNumber: 1,
+      action: 'click',
+      target: { tagName: 'button', locators: [], selectedLocatorIndex: 0 },
+    });
+    const stepB = createTestStep({
+      stepNumber: 2,
+      action: 'type',
+      target: { tagName: 'input', locators: [], selectedLocatorIndex: 0 },
+      value: 'hello',
+    });
+
+    await sessionManager.addStep(stepA);
+    await sessionManager.addStep(stepB);
+
+    expect(sessionManager.activeTestCase?.steps[0].action).toBe('click');
+    expect(sessionManager.activeTestCase?.steps[1].action).toBe('type');
+
+    // Move step B up
+    await sessionManager.reorderStep(stepB.id, 'up');
+    expect(sessionManager.activeTestCase?.steps[0].id).toBe(stepB.id);
+    expect(sessionManager.activeTestCase?.steps[0].stepNumber).toBe(1);
+    expect(sessionManager.activeTestCase?.steps[1].id).toBe(stepA.id);
+    expect(sessionManager.activeTestCase?.steps[1].stepNumber).toBe(2);
+
+    // Move step B down
+    await sessionManager.reorderStep(stepB.id, 'down');
+    expect(sessionManager.activeTestCase?.steps[0].id).toBe(stepA.id);
+    expect(sessionManager.activeTestCase?.steps[1].id).toBe(stepB.id);
+  });
+
+  it('allows customizing action type and updating step values on the fly', async () => {
+    await sessionManager.startRecording({ url: 'https://example.com' });
+
+    const step = createTestStep({
+      stepNumber: 1,
+      action: 'click',
+      target: { tagName: 'h1', text: 'Dashboard', locators: [], selectedLocatorIndex: 0 },
+    });
+    await sessionManager.addStep(step);
+
+    // Change action to assert_text
+    await sessionManager.updateStepAction(step.id, 'assert_text');
+    expect(sessionManager.activeTestCase?.steps[0].action).toBe('assert_text');
+    expect(sessionManager.activeTestCase?.steps[0].assertExpected).toBe('Dashboard');
+
+    // Update expected value
+    await sessionManager.updateStepValue(step.id, undefined, 'Welcome to Dashboard');
+    expect(sessionManager.activeTestCase?.steps[0].assertExpected).toBe('Welcome to Dashboard');
+  });
 });

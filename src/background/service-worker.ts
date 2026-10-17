@@ -86,6 +86,54 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
             break;
           }
 
+          case 'UPDATE_STEP_ACTION': {
+            if (message.payload?.stepId && message.payload?.action) {
+              await sessionManager.updateStepAction(
+                message.payload.stepId,
+                message.payload.action
+              );
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'REORDER_STEP': {
+            if (message.payload?.stepId && message.payload?.direction) {
+              await sessionManager.reorderStep(
+                message.payload.stepId,
+                message.payload.direction
+              );
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'UPDATE_STEP_VALUE': {
+            if (message.payload?.stepId) {
+              await sessionManager.updateStepValue(
+                message.payload.stepId,
+                message.payload.value,
+                message.payload.assertExpected
+              );
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'TEST_LOCATOR': {
+            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+              const tab = tabs.find((t) => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://')) || tabs[0];
+              if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, message, (response) => {
+                  sendResponse(response || { success: false, matchCount: 0 });
+                });
+              } else {
+                sendResponse({ success: false, matchCount: 0 });
+              }
+            });
+            return true;
+          }
+
           case 'CLEAR_SESSION': {
             await sessionManager.clearSession();
             sendResponse({ success: true });

@@ -438,7 +438,7 @@ export class EventRecorder {
   private initMessageListener(): void {
     if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
 
-    chrome.runtime.onMessage.addListener((message: ExtensionMessage) => {
+    chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
       if (message.type === 'START_RECORDING') {
         this.start();
       } else if (message.type === 'STOP_RECORDING') {
@@ -447,6 +447,59 @@ export class EventRecorder {
         this.startInspecting();
       } else if (message.type === 'STOP_INSPECTING') {
         this.stopInspecting();
+      } else if (message.type === 'TEST_LOCATOR') {
+        const { strategy, value } = message.payload;
+        let matchCount = 0;
+        let matchedElem: HTMLElement | null = null;
+
+        try {
+          if (strategy === 'xpath' || strategy === 'absolute-xpath') {
+            const result = document.evaluate(
+              value,
+              document,
+              null,
+              XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+              null
+            );
+            matchCount = result.snapshotLength;
+            if (matchCount > 0) {
+              matchedElem = result.snapshotItem(0) as HTMLElement;
+            }
+          } else {
+            const matches = document.querySelectorAll(value);
+            matchCount = matches.length;
+            if (matchCount > 0) {
+              matchedElem = matches[0] as HTMLElement;
+            }
+          }
+
+          if (matchedElem) {
+            this.createHighlightOverlay();
+            matchedElem.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            this.highlight(matchedElem);
+            this.showFlashFeedback(matchedElem, `✓ ${matchCount} match${matchCount > 1 ? 'es' : ''} found`);
+            setTimeout(() => {
+              if (!this.isInspecting && !this.isRecording) {
+                this.removeHighlightOverlay();
+              } else if (this.highlightOverlay) {
+                this.highlightOverlay.style.display = 'none';
+              }
+            }, 3000);
+          }
+
+          sendResponse({
+            success: matchCount > 0,
+            matchCount,
+            tagName: matchedElem ? matchedElem.tagName.toLowerCase() : undefined,
+            text: matchedElem ? (matchedElem.textContent || '').trim().substring(0, 50) : undefined,
+          });
+        } catch {
+          sendResponse({
+            success: false,
+            matchCount: 0,
+          });
+        }
+        return true;
       }
     });
   }
