@@ -152,20 +152,30 @@ export function generateLocators(
   const candidates: LocatorCandidate[] = [];
   const tagName = element.tagName.toLowerCase();
 
-  // Detect if element resides inside an open Shadow DOM
-  const rootNode = element.getRootNode ? element.getRootNode() : null;
-  const isInsideShadow = !!(
-    rootNode &&
+  // Detect if element resides inside one or more open Shadow DOMs (multi-level deep piercing)
+  const shadowHostPath: string[] = [];
+  let currRoot: Node | null = element.getRootNode ? element.getRootNode() : null;
+  while (
+    currRoot &&
     typeof ShadowRoot !== 'undefined' &&
-    rootNode instanceof ShadowRoot &&
-    rootNode.host
-  );
-  let hostSelector: string | undefined;
-  if (isInsideShadow) {
-    const host = (rootNode as ShadowRoot).host as HTMLElement;
+    currRoot instanceof ShadowRoot &&
+    currRoot.host
+  ) {
+    const host = currRoot.host as HTMLElement;
     const hostTag = host.tagName.toLowerCase();
-    hostSelector = host.id ? `${hostTag}#${host.id}` : hostTag;
+    const hostTestId = host.getAttribute('data-testid') || host.getAttribute('data-test') || host.getAttribute('data-cy');
+    const sel = host.id
+      ? `${hostTag}#${escapeCss(host.id)}`
+      : hostTestId
+      ? `${hostTag}[data-testid="${escapeCss(hostTestId)}"]`
+      : hostTag;
+    shadowHostPath.unshift(sel);
+    currRoot = host.getRootNode ? host.getRootNode() : null;
   }
+
+  const isInsideShadow = shadowHostPath.length > 0;
+  const hostSelector = isInsideShadow ? shadowHostPath[shadowHostPath.length - 1] : undefined;
+  const primaryRootNode = isInsideShadow && element.getRootNode ? (element.getRootNode() as ShadowRoot) : undefined;
 
   // 1. ID Strategy
   const rawId = element.getAttribute('id');
@@ -182,12 +192,15 @@ export function generateLocators(
     });
   }
 
-  // 2. Test ID Strategy (data-testid, data-cy, data-test, data-qa)
+  // 2. Test ID Strategy (data-testid, data-cy, data-test, data-qa, data-test-id, data-automation-id)
   const testAttr =
     element.getAttribute('data-testid') ||
     element.getAttribute('data-cy') ||
     element.getAttribute('data-test') ||
-    element.getAttribute('data-qa');
+    element.getAttribute('data-qa') ||
+    element.getAttribute('data-test-id') ||
+    element.getAttribute('data-automation-id') ||
+    element.getAttribute('data-qa-id');
 
   if (testAttr && testAttr.trim()) {
     candidates.push({
@@ -351,8 +364,8 @@ export function generateLocators(
   }
 
   // If element is inside a Shadow Root, also add Shadow Host locator in light DOM
-  if (isInsideShadow && rootNode instanceof ShadowRoot && rootNode.host) {
-    const host = rootNode.host as HTMLElement;
+  if (isInsideShadow && primaryRootNode instanceof ShadowRoot && primaryRootNode.host) {
+    const host = primaryRootNode.host as HTMLElement;
     const hostTag = host.tagName.toLowerCase();
     const hostText = (host.textContent || '').replace(/\s+/g, ' ').trim();
     if (hostText && hostText.length <= 50) {
@@ -399,12 +412,13 @@ export function generateLocators(
   const candidatesWithShadow = candidates.map((c) => ({
     ...c,
     shadowHostSelector: isInsideShadow ? hostSelector : undefined,
+    shadowHostPath: isInsideShadow ? [...shadowHostPath] : undefined,
     isShadowDom: isInsideShadow,
   }));
 
   // Validate all candidates against the live DOM (or ShadowRoot if encapsulated)
   const validated = candidatesWithShadow.map((candidate) =>
-    validateLocator(candidate, doc, isInsideShadow ? (rootNode as ShadowRoot) : undefined)
+    validateLocator(candidate, doc, isInsideShadow ? primaryRootNode : undefined)
   );
 
   // Strict sorting:

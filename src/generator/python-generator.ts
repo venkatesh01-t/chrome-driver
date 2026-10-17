@@ -35,6 +35,32 @@ function getStepLocator(step: TestStep): { tuple: string; candidate?: LocatorCan
   return { tuple: formatLocatorTuple(candidate), candidate };
 }
 
+export function getFallbackLocatorTuples(step: TestStep): string[] {
+  const locs = step.target?.locators || [];
+  const selectedIndex = step.target?.selectedLocatorIndex ?? 0;
+  const tuples: string[] = [];
+  const seenValues = new Set<string>();
+
+  const primary = locs[selectedIndex] || locs[0];
+  if (primary) {
+    const formatted = formatLocatorTuple(primary);
+    tuples.push(formatted);
+    seenValues.add(`${primary.strategy}:${primary.value}`);
+  }
+
+  for (let i = 0; i < locs.length && tuples.length < 4; i++) {
+    if (i !== selectedIndex && locs[i] && locs[i].matchCount !== 0) {
+      const key = `${locs[i].strategy}:${locs[i].value}`;
+      if (!seenValues.has(key)) {
+        seenValues.add(key);
+        tuples.push(formatLocatorTuple(locs[i]));
+      }
+    }
+  }
+
+  return tuples;
+}
+
 function buildStepComment(step: TestStep, index: number): string {
   const componentInfo = step.target.componentType ? ` in ${step.target.componentType.toUpperCase()}` : '';
   const labelInfo = step.target.labelText ? ` "${step.target.labelText}"` : '';
@@ -127,6 +153,7 @@ export function generateSimpleScript(testCase: TestCaseModel): string {
   if (hasKeys) lines.push('from selenium.webdriver.common.keys import Keys');
   if (hasHover) lines.push('from selenium.webdriver.common.action_chains import ActionChains');
   if (hasSelect) lines.push('from selenium.webdriver.support.ui import Select');
+  lines.push('import os');
   lines.push('import time');
   lines.push('');
   lines.push('def find(driver, by, value, timeout=10):');
@@ -149,7 +176,13 @@ export function generateSimpleScript(testCase: TestCaseModel): string {
   lines.push('        driver.execute_script("arguments[0].click();", el)');
   lines.push('    return el');
   lines.push('');
-  lines.push('driver = webdriver.Chrome()');
+  lines.push('is_headless = os.getenv("HEADLESS", "false").lower() == "true"');
+  lines.push('if is_headless:');
+  lines.push('    options = webdriver.ChromeOptions()');
+  lines.push('    options.add_argument("--headless=new")');
+  lines.push('    driver = webdriver.Chrome(options=options)');
+  lines.push('else:');
+  lines.push('    driver = webdriver.Chrome()');
   lines.push('driver.maximize_window()');
   lines.push('');
   lines.push('try:');
@@ -326,6 +359,11 @@ export function generateEnterpriseScript(testCase: TestCaseModel): string {
   lines.push('    options.add_argument("--window-size=1920,1080")');
   lines.push('    options.add_argument("--disable-search-engine-choice-screen")');
   lines.push('');
+  lines.push('    # Anti-Bot & Automation Masking');
+  lines.push('    options.add_argument("--disable-blink-features=AutomationControlled")');
+  lines.push('    options.add_experimental_option("excludeSwitches", ["enable-automation"])');
+  lines.push('    options.add_experimental_option("useAutomationExtension", False)');
+  lines.push('');
   lines.push('    # Optional Proxy Configuration');
   lines.push('    proxy = os.getenv("PROXY_SERVER", "").strip()');
   lines.push('    if proxy:');
@@ -347,10 +385,47 @@ export function generateEnterpriseScript(testCase: TestCaseModel): string {
   lines.push('        driver.maximize_window()');
   lines.push(`    wait = WebDriverWait(driver, ${timeout})`);
   lines.push('');
+  lines.push('    # Mask navigator.webdriver fingerprint via CDP');
+  lines.push('    try:');
+  lines.push('        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {');
+  lines.push('            "source": "Object.defineProperty(navigator, \'webdriver\', {get: () => undefined})"');
+  lines.push('        })');
+  lines.push('    except Exception:');
+  lines.push('        pass');
+  lines.push('');
   lines.push('    # Optional Timezone Emulation via CDP');
   lines.push('    browser_tz = os.getenv("TIMEZONE", "").strip()');
   lines.push('    if browser_tz:');
   lines.push('        driver.execute_cdp_cmd("Emulation.setTimezoneOverride", {"timezoneId": browser_tz})');
+  lines.push('');
+  lines.push('    # Self-Healing Element Finder Helper');
+  lines.push('    def find_resilient(d, locators, timeout=10, condition="presence"):');
+  lines.push('        last_exc = None');
+  lines.push('        for idx, (by, val) in enumerate(locators):');
+  lines.push('            try:');
+  lines.push('                wait_t = timeout if idx == 0 else min(timeout, 3)');
+  lines.push('                w = WebDriverWait(d, wait_t)');
+  lines.push('                if condition == "clickable":');
+  lines.push('                    el = w.until(EC.element_to_be_clickable((by, val)))');
+  lines.push('                elif condition == "visible":');
+  lines.push('                    el = w.until(EC.visibility_of_element_located((by, val)))');
+  lines.push('                else:');
+  lines.push('                    el = w.until(EC.presence_of_element_located((by, val)))');
+  lines.push('                if idx > 0:');
+  lines.push('                    print(f"[SELF-HEALED] Step locator failed; automatically healed using backup: ({by}, \'{val}\')")');
+  lines.push('                return el');
+  lines.push('            except Exception as e:');
+  lines.push('                last_exc = e');
+  lines.push('        raise last_exc');
+  lines.push('');
+  lines.push('    # Network & DOM Idle Stabilization Helper');
+  lines.push('    def wait_for_page_stable(d, timeout=5):');
+  lines.push('        try:');
+  lines.push('            WebDriverWait(d, timeout).until(');
+  lines.push('                lambda drv: drv.execute_script("return document.readyState === \'complete\'")');
+  lines.push('            )');
+  lines.push('        except Exception:');
+  lines.push('            pass');
   lines.push('');
   lines.push('    try:');
 
@@ -374,14 +449,15 @@ export function generateEnterpriseScript(testCase: TestCaseModel): string {
           const cssFallback = step.target.locators.find((l) => l.strategy === 'css');
           const shadowLocatorTuple = cssFallback ? formatLocatorTuple(cssFallback) : tuple;
           const cssVal = cssFallback ? cssFallback.value : candidate?.value || '';
+          const shadowPath = step.target.shadowHostPath && step.target.shadowHostPath.length > 0 ? step.target.shadowHostPath : [shadowHost];
 
           lines.push(`        shadow_host = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "${shadowHost}")))`);
           lines.push(`        try:`);
           lines.push(`            element = shadow_host.shadow_root.find_element(*${shadowLocatorTuple})`);
           lines.push(`        except Exception:`);
           lines.push(`            element = driver.execute_script(`);
-          lines.push(`                "return arguments[0].shadowRoot ? (arguments[0].shadowRoot.querySelector(arguments[1]) || Array.from(arguments[0].shadowRoot.querySelectorAll('a, button, span, li')).find(e => (e.textContent || '').trim().includes(arguments[2]))) : null;",`);
-          lines.push(`                shadow_host, ${JSON.stringify(cssVal)}, ${JSON.stringify(step.target.text || '')}`);
+          lines.push(`                "let curr = arguments[0]; const hosts = arguments[3]; if (hosts && hosts.length > 1) { curr = document; for (let h of hosts) { const hostEl = curr.querySelector(h); if (!hostEl || !hostEl.shadowRoot) break; curr = hostEl.shadowRoot; } } else if (curr.shadowRoot) { curr = curr.shadowRoot; } return curr.querySelector ? (curr.querySelector(arguments[1]) || Array.from(curr.querySelectorAll('a, button, span, li')).find(e => (e.textContent || '').trim().includes(arguments[2]))) : null;",`);
+          lines.push(`                shadow_host, ${JSON.stringify(cssVal)}, ${JSON.stringify(step.target.text || '')}, ${JSON.stringify(shadowPath)}`);
           lines.push(`            )`);
           lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
           lines.push(`        try:`);
@@ -389,7 +465,12 @@ export function generateEnterpriseScript(testCase: TestCaseModel): string {
           lines.push(`        except Exception:`);
           lines.push(`            driver.execute_script("arguments[0].click();", element)`);
         } else {
-          lines.push(`        element = wait.until(EC.element_to_be_clickable(${tuple}))`);
+          lines.push(`        try:`);
+          lines.push(`            element = wait.until(EC.element_to_be_clickable(${tuple}))`);
+          lines.push(`        except Exception:`);
+          const fallbackTuples = getFallbackLocatorTuples(step);
+          lines.push(`            # Self-Healing Fallback across ranked locators`);
+          lines.push(`            element = find_resilient(driver, [${fallbackTuples.join(', ')}], timeout=5, condition="clickable")`);
           lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
           lines.push(`        try:`);
           lines.push(`            element.click()`);
@@ -398,7 +479,12 @@ export function generateEnterpriseScript(testCase: TestCaseModel): string {
         }
       } else if (step.action === 'type') {
         const valExpression = step.isSensitive && step.variableName ? step.variableName : JSON.stringify(step.value ?? '');
-        lines.push(`        element = wait.until(EC.visibility_of_element_located(${tuple}))`);
+        lines.push(`        try:`);
+        lines.push(`            element = wait.until(EC.visibility_of_element_located(${tuple}))`);
+        lines.push(`        except Exception:`);
+        const fallbackTuples = getFallbackLocatorTuples(step);
+        lines.push(`            # Self-Healing Fallback across ranked locators`);
+        lines.push(`            element = find_resilient(driver, [${fallbackTuples.join(', ')}], timeout=5, condition="visible")`);
         lines.push(`        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element)`);
         lines.push(`        element.clear()`);
         lines.push(`        element.send_keys(${valExpression})`);
@@ -526,8 +612,20 @@ export function generatePytestScript(testCase: TestCaseModel): string {
   lines.push('@pytest.fixture');
   lines.push('def driver():');
   lines.push('    options = webdriver.ChromeOptions()');
+  lines.push('    is_headless = os.getenv("HEADLESS", "false").lower() == "true"');
+  lines.push('    if is_headless:');
+  lines.push('        options.add_argument("--headless=new")');
   lines.push('    options.add_argument("--start-maximized")');
+  lines.push('    options.add_argument("--disable-blink-features=AutomationControlled")');
+  lines.push('    options.add_experimental_option("excludeSwitches", ["enable-automation"])');
+  lines.push('    options.add_experimental_option("useAutomationExtension", False)');
   lines.push('    d = webdriver.Chrome(options=options)');
+  lines.push('    try:');
+  lines.push('        d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {');
+  lines.push('            "source": "Object.defineProperty(navigator, \'webdriver\', {get: () => undefined})"');
+  lines.push('        })');
+  lines.push('    except Exception:');
+  lines.push('        pass');
   lines.push('    yield d');
   lines.push('    d.quit()');
   lines.push('');

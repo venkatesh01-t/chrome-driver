@@ -15,6 +15,7 @@ export interface LocatorCandidate {
   score: number;
   warning?: 'multiple_matches' | 'dynamic_id' | 'dom_dependent' | 'no_matches';
   shadowHostSelector?: string;
+  shadowHostPath?: string[];
   isShadowDom?: boolean;
 }
 
@@ -75,6 +76,7 @@ export interface TargetElementModel {
   semanticType?: string;
   labelText?: string;
   shadowHostSelector?: string;
+  shadowHostPath?: string[];
   isShadowDom?: boolean;
   componentType?: ComponentType;
   componentHierarchy?: string;
@@ -108,6 +110,9 @@ export interface TestCaseSettings {
   maskSensitiveData: boolean;
   codeStyle: 'simple' | 'enterprise' | 'pytest';
   engine?: 'selenium' | 'playwright';
+  selfHealing?: boolean;
+  stealthMode?: boolean;
+  autoWaitStabilization?: boolean;
 }
 
 export interface TestCaseModel {

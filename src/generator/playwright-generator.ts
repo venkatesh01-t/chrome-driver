@@ -261,7 +261,7 @@ export function generatePlaywrightEnterpriseScript(testCase: TestCaseModel): str
   lines.push('    artifact_dir.mkdir(parents=True, exist_ok=True)');
   lines.push('');
   lines.push('    with sync_playwright() as p:');
-  lines.push('        browser = p.chromium.launch(headless=is_headless)');
+  lines.push('        browser = p.chromium.launch(headless=is_headless, args=["--disable-blink-features=AutomationControlled"])');
   lines.push('        context = browser.new_context(');
   lines.push('            viewport={"width": 1920, "height": 1080},');
   lines.push('            record_video_dir=str(artifact_dir / "videos") if os.getenv("RECORD_VIDEO") == "true" else None');

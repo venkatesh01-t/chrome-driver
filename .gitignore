@@ -1,4 +1,33 @@
+# Dependencies
 node_modules/
+
+# Build Outputs & Bundles
 dist/
+*.zip
+*.tar.gz
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
 *.log
+npm-debug.log*
+
+# Python Artifacts & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Test Artifacts & Diagnostics
+scratch/
+artifacts/
+downloads/
+
+# Operating System Files
 .DS_Store
+Thumbs.db

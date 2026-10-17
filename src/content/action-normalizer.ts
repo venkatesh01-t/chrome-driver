@@ -70,6 +70,7 @@ export class ActionNormalizer {
 
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -82,6 +83,7 @@ export class ActionNormalizer {
         semanticType: semantics.semanticType,
         labelText: semantics.labelText,
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
@@ -106,6 +108,7 @@ export class ActionNormalizer {
 
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -118,6 +121,7 @@ export class ActionNormalizer {
         semanticType: 'dropdown',
         labelText: semantics.labelText,
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
@@ -155,6 +159,7 @@ export class ActionNormalizer {
 
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -167,6 +172,7 @@ export class ActionNormalizer {
         semanticType: semantics.semanticType,
         labelText: semantics.labelText,
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
@@ -189,6 +195,7 @@ export class ActionNormalizer {
     const text = (element.textContent || '').trim().substring(0, 100);
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     let assertExpected = text;
     if (assertType === 'assert_attribute' && attributeName) {
@@ -204,6 +211,7 @@ export class ActionNormalizer {
         selectedLocatorIndex: 0,
         text,
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
@@ -232,6 +240,7 @@ export class ActionNormalizer {
 
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -242,6 +251,7 @@ export class ActionNormalizer {
         selectedLocatorIndex: 0,
         text: (element.textContent || '').trim().substring(0, 50),
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
@@ -259,6 +269,7 @@ export class ActionNormalizer {
     const component = classifyComponent(element);
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+    const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -269,6 +280,7 @@ export class ActionNormalizer {
         selectedLocatorIndex: 0,
         text: (element.textContent || '').trim().substring(0, 50),
         shadowHostSelector,
+        shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
