@@ -59,44 +59,66 @@ Traditional browser recorders dump brittle absolute XPaths (`/html/body/div[2]/d
 
 ## 🏗️ System Architecture & Data Flow
 
+The extension is designed around a decoupled, 3-tier event pipeline that separates **DOM Perception**, **AST State Management**, and **Code Compilation**:
+
 ```mermaid
-flowchart TB
-    subgraph Browser["🌐 Active Web Page (Content Script & Floating HUD)"]
+flowchart LR
+    subgraph S1["1. In-Page Content Engine (Webpage)"]
         direction TB
-        DOM["User Interaction (Click, Input, Select, Hover)"]
-        BUBBLE["Target Resolver & Visibility Guard<br/>(composedPath() SVG Bubbling & Hidden Link Rejection)"]
-        NORM["Action Normalizer<br/>(Ancestor Debounce & Buffer Flush)"]
-        ENTROPY["Dynamic Entropy Filter<br/>(Rejects :r0:, Tailwind & Hashes)"]
-        ANCHOR["Multi-Tier Locator Engine<br/>(TestID • ARIA • Label • Row Context)"]
-        VAL["Live DOM Fingerprint Validator<br/>(matchCount === 1 & Confidence Scorer)"]
-        HUD["Isolated Shadow DOM Floating HUD<br/>(Hover Pill • 1-Click Assert • Code Drawer)"]
-
-        DOM --> BUBBLE --> NORM --> ENTROPY --> ANCHOR --> VAL
-        VAL -.-> HUD
+        DOM["🖱️ User Interaction<br/>(Click, Input, Select, Scroll)"]
+        RESOLVE["🎯 Target Resolver & Visibility Guard<br/>(SVG Bubbling & Hidden Link Skip)"]
+        NORM["⚡ Action Normalizer<br/>(Debounce Cascade & Typing Buffer)"]
+        LOC["🧠 Locator Engine & Entropy Filter<br/>(Shannon H > 3.0 & Multi-Tier Scoring)"]
+        DOM --> RESOLVE --> NORM --> LOC
     end
 
-    subgraph Extension["⚡ Chrome MV3 Core (Service Worker & State)"]
+    subgraph S2["2. Chrome MV3 Core (Extension)"]
         direction TB
-        SW["Background Service Worker<br/>(Cross-Tab Sync & TabId Tracking)"]
-        SM["Session Manager (AST Store)<br/>(TestCaseModel + chrome.storage.local)"]
-        UI["Slide-Over Code Drawer / Side Panel<br/>(Live Syntax Highlighting & JSON Backup)"]
-
-        SW <--> SM <--> UI
+        SW["⚙️ Background Service Worker<br/>(Cross-Tab Sync & TabId Tracking)"]
+        SM["📦 Session Manager (AST Store)<br/>(TestCaseModel & chrome.storage.local)"]
+        HUD["🪟 Floating Shadow DOM HUD<br/>(Hover Pill • 1-Click Assert • Code Drawer)"]
+        SW <--> SM
+        SM -.-> HUD
     end
 
-    subgraph Compiler["🐍 Dual AST-to-Python Compilers"]
+    subgraph S3["3. Dual Code Compilers (Python)"]
         direction TB
-        SEL["Selenium 4 Generator<br/>(Simple • Enterprise • Pytest • POM)"]
-        PW["Playwright Generator<br/>(Visibility Filter • Native .or_() • Tracing)"]
+        SEL["🐍 Selenium 4 Generator<br/>(Simple • Enterprise • Pytest • POM)"]
+        PW["🎭 Playwright Generator<br/>(Safe .or_() Chaining • Tracing)"]
     end
 
-    VAL ==>|"Validated TestStep AST"| SW
-    UI ==>|"Compile AST"| SEL & PW
-
-    style Browser fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc
-    style Extension fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#f8fafc
-    style Compiler fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#f8fafc
+    LOC ==>|"Validated TestStep AST"| SW
+    SM ==>|"Compile AST"| SEL & PW
 ```
+
+### 🔄 End-to-End Event Lifecycle
+
+```text
+User Action (Click / Keypress)
+  │
+  ▼ [Layer 1: In-Page Content Engine]
+  ├─► composedPath() Normalization  ──► Walks up from SVG/icons to semantic interactive control
+  ├─► Visibility Guard Check         ──► Discards hidden anchors (<a hidden>), display:none, opacity:0
+  ├─► Shannon Entropy Filter         ──► Strips dynamic hashes (:r4f:, ng-tns, UUIDs)
+  ├─► Contextual Locator Generation  ──► Emits 3-tier ranked locators (TestID > ARIA > Text > XPath)
+  │
+  ▼ [Layer 2: Chrome MV3 Core]
+  ├─► Action Normalizer              ──► Coalesces rapid typing & debounces synthetic event bursts (<400ms)
+  ├─► Tab Switch Tracking            ──► Detects target="_blank" navigations & emits switch_tab
+  ├─► Session AST Persistence        ──► Serializes structured TestStep into chrome.storage.local
+  │
+  ▼ [Layer 3: Dual Code Generators]
+  ├─► AST-to-Selenium Synthesizer    ──► Emits WebDriverWait + 3-tier smart_find() self-healing fallbacks
+  └─► AST-to-Playwright Synthesizer  ──► Emits .locator("visible=true").first strict-mode safe chains
+```
+
+### 🧩 3-Layer Architecture Breakdown
+
+| Architecture Layer | Key Responsibilities | Source Files |
+| :--- | :--- | :--- |
+| **1. In-Page Perception** | Listens in capture phase, resolves true interactive targets from raw DOM leaves, rejects dynamic entropy noise, generates contextual XPaths, and renders the in-page Floating HUD. | [`src/content/`](file:///c:/Users/KING/Documents/GitHub/chrome-driver/src/content/)<br/>`event-recorder.ts`<br/>`locator-engine.ts`<br/>`action-normalizer.ts`<br/>`hud/` |
+| **2. Chrome MV3 Core** | Manages session lifecycle, tracks active tabs across multiple windows, synchronizes recording state across navigations, and persists test cases to local extension storage. | [`src/background/`](file:///c:/Users/KING/Documents/GitHub/chrome-driver/src/background/)<br/>`service-worker.ts`<br/>`session-manager.ts` |
+| **3. Multi-Engine Compilers** | Pure TypeScript AST compilers that transform `TestCaseModel` JSON into four distinct Python testing paradigms for Selenium 4 and Playwright. | [`src/generator/`](file:///c:/Users/KING/Documents/GitHub/chrome-driver/src/generator/)<br/>`python-generator.ts`<br/>`playwright-generator.ts` |
 
 ---
 
