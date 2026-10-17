@@ -61,19 +61,30 @@ export function renderStepCard(step: TestStep): string {
   }
 
   const currentLocatorVal = currentLocator ? escapeHtml(currentLocator.value) : '';
+  const isAssertion = step.action.startsWith('assert');
+  const isPrint = step.action === 'print_value';
+  const isTabSwitch = step.action === 'switch_tab';
 
   return `
-    <div class="step-card" data-step-id="${step.id}">
+    <div class="step-card${isAssertion ? ' assertion' : ''}${isPrint ? ' print-value' : ''}${isTabSwitch ? ' tab-switch' : ''}" data-step-id="${step.id}">
       <div class="step-header">
         <span class="step-number">#${step.stepNumber}</span>
-        <span class="step-badge ${actionClass}">${step.action.toUpperCase()}</span>
+        ${step.target.componentType ? `<span class="badge-component ${step.target.componentType}">${step.target.componentType}</span>` : ''}
+        <span class="step-badge ${actionClass}">${isPrint ? '🖨️ PRINT' : isTabSwitch ? '🗂️ TAB' : step.action.toUpperCase()}</span>
         <span class="step-tag">${tagName}</span>
         ${statusBadge}
         <button class="delete-step-btn" data-step-id="${step.id}" title="Remove Step">×</button>
       </div>
 
-      ${valueDisplay ? `<div class="step-details">${valueDisplay}</div>` : ''}
+      ${step.target.componentHierarchy ? `<div class="step-hierarchy">${escapeHtml(step.target.componentHierarchy)}</div>` : ''}
+      ${isTabSwitch ? `<div class="step-details"><span class="tab-switch-details">🗂️ SWITCH TAB: index ${step.tabIndex ?? -1} ${step.tabTitle ? `(${escapeHtml(step.tabTitle)})` : ''}</span></div>` : ''}
+      ${valueDisplay && !isPrint && !isTabSwitch ? `<div class="step-details">${valueDisplay}</div>` : ''}
+      ${isPrint ? `<div class="step-details"><span class="print-label">🖨️ EXTRACT:</span> ${step.value ? `"${escapeHtml(step.value)}"` : '(runtime value)'}</div>` : ''}
+      ${step.assertExpected ? `<div class="step-details"><span class="assert-label">EXPECT:</span> "${escapeHtml(step.assertExpected)}"</div>` : ''}
+      ${step.keyCombo ? `<div class="step-details"><span class="step-value">Key: ${escapeHtml(step.keyCombo)}</span></div>` : ''}
+      ${step.waitDuration ? `<div class="step-details"><span class="step-value">Duration: ${step.waitDuration}s</span></div>` : ''}
 
+      ${step.target.locators && step.target.locators.length > 0 ? `
       <div class="step-locator-row">
         <div class="locator-header-row">
           <label class="locator-label">LOCATOR</label>
@@ -84,7 +95,7 @@ export function renderStepCard(step: TestStep): string {
         <select class="locator-select" data-step-id="${step.id}" title="${currentLocatorVal}">
           ${locatorOptions}
         </select>
-      </div>
+      </div>` : ''}
     </div>
   `;
 }

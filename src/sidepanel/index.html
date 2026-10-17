@@ -16,8 +16,8 @@
       <div class="brand">
         <div class="logo-icon">⚡</div>
         <div class="brand-text">
-          <h1>Selenium Recorder</h1>
-          <span class="subtitle">Python • Flake-Free • MV3</span>
+          <h1>AutomateX Studio</h1>
+          <span class="subtitle">Selenium 4 & Playwright • Flake-Free</span>
         </div>
       </div>
       <div id="statusIndicator" class="status-pill idle">
@@ -28,7 +28,7 @@
 
     <!-- Controls Toolbar -->
     <section class="toolbar">
-      <button id="toggleRecordBtn" class="btn btn-record">
+      <button id="toggleRecordBtn" class="btn btn-record" title="Start / Stop Recording (Ctrl+Shift+R)">
         <span class="btn-icon">⏺</span>
         <span class="btn-label">Record</span>
       </button>
@@ -36,10 +36,25 @@
         <span class="btn-icon">🎯</span>
         <span class="btn-label">Inspect</span>
       </button>
+      <button id="addNavigateBtn" class="btn btn-secondary" title="Add URL Navigation Step">
+        <span>🔗 Nav</span>
+      </button>
+      <button id="addWaitBtn" class="btn btn-secondary" title="Add Wait Step">
+        <span>⏳ Wait</span>
+      </button>
+      <button id="addTabBtn" class="btn btn-secondary" title="Open or Switch Tab Step">
+        <span>🗂️ Tab</span>
+      </button>
       <button id="clearBtn" class="btn btn-secondary btn-icon-only" title="Clear all steps">
         <span>🗑</span>
       </button>
     </section>
+
+    <!-- Shortcut Helper Bar -->
+    <div class="shortcut-tip-bar">
+      <span class="tip-icon">💡</span>
+      <span class="tip-text"><b>Ctrl + Click</b> to Print Value • <b>Alt + Click</b> to Assert</span>
+    </div>
 
     <!-- Inspection Bar -->
     <div id="inspectionBar" class="inspection-bar hidden">
@@ -106,11 +121,30 @@
 
       <!-- Code View -->
       <div id="codeView" class="tab-view hidden">
+        <!-- Dual-Tier Selectors -->
+        <!-- Tier 1: Automation Engine -->
+        <div class="engine-selector" id="engineSelector">
+          <button class="engine-btn active" data-engine="selenium">🐍 Selenium 4</button>
+          <button class="engine-btn" data-engine="playwright">🎭 Playwright</button>
+        </div>
+
+        <!-- Tier 2: Code Style -->
+        <div class="code-style-selector" id="codeStyleSelector">
+          <button class="style-btn active" data-style="simple">Simple</button>
+          <button class="style-btn" data-style="enterprise">Enterprise</button>
+          <button class="style-btn" data-style="pytest">Pytest</button>
+        </div>
+
         <div class="code-actions">
-          <span class="code-lang">Python (Selenium 4)</span>
-          <button id="copyCodeBtn" class="btn btn-sm btn-primary">
-            <span>📋 Copy Python</span>
-          </button>
+          <span id="codeLangLabel" class="code-lang">Python (Selenium 4)</span>
+          <div class="code-btn-group">
+            <button id="copyCodeBtn" class="btn btn-sm btn-primary" title="Copy code to clipboard">
+              <span>📋 Copy</span>
+            </button>
+            <button id="downloadCodeBtn" class="btn btn-sm btn-secondary" title="Save script as Python file (.py)">
+              <span>💾 Save .py</span>
+            </button>
+          </div>
         </div>
         <pre class="code-container"><code id="pythonCodeOutput" class="python-code"># Click Record to generate Python code...</code></pre>
       </div>
@@ -119,7 +153,7 @@
     <!-- Footer -->
     <footer class="panel-footer">
       <div class="footer-info">
-        <span>Zero <code>time.sleep()</code> • Explicit Waits</span>
+        <span>Selenium 4 & Playwright • Zero <code>time.sleep()</code></span>
       </div>
     </footer>
   </div>

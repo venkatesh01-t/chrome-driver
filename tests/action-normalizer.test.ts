@@ -119,5 +119,108 @@ describe('Action Normalizer', () => {
     expect(emittedSteps[0].target.semanticType).toBe('email');
     expect(emittedSteps[0].target.labelText).toBe('Email Address');
   });
+
+  it('records assertions for assert_visible and assert_text with component tagging', () => {
+    document.body.innerHTML = '<header><h1 id="title">Dashboard</h1></header>';
+    const title = document.getElementById('title') as HTMLElement;
+
+    normalizer.recordAssertion(title, 'assert_visible');
+    normalizer.recordAssertion(title, 'assert_text');
+
+    expect(emittedSteps.length).toBe(2);
+    expect(emittedSteps[0].action).toBe('assert_visible');
+    expect(emittedSteps[0].target.componentType).toBe('header');
+    expect(emittedSteps[0].assertExpected).toBe('Dashboard');
+
+    expect(emittedSteps[1].action).toBe('assert_text');
+    expect(emittedSteps[1].assertExpected).toBe('Dashboard');
+  });
+
+  it('records hover action', () => {
+    document.body.innerHTML = '<nav><a id="menu" href="#">Menu</a></nav>';
+    const menu = document.getElementById('menu') as HTMLElement;
+
+    normalizer.recordHover(menu);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('hover');
+    expect(emittedSteps[0].target.componentType).toBe('link');
+  });
+
+  it('records keypress action', () => {
+    document.body.innerHTML = '<input id="search-box" type="search" />';
+    const input = document.getElementById('search-box') as HTMLElement;
+
+    normalizer.recordKeyPress('Enter', input);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('press_key');
+    expect(emittedSteps[0].keyCombo).toBe('Enter');
+  });
+
+  it('records scroll action', () => {
+    normalizer.recordScroll(0, 500);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('scroll');
+    expect(emittedSteps[0].value).toBe('0,500');
+  });
+
+  it('records file upload action', () => {
+    document.body.innerHTML = '<input id="file-in" type="file" />';
+    const fileInput = document.getElementById('file-in') as HTMLInputElement;
+
+    normalizer.recordFileUpload(fileInput, '/path/to/test.csv');
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('upload_file');
+    expect(emittedSteps[0].value).toBe('/path/to/test.csv');
+  });
+
+  it('records drag and drop action', () => {
+    document.body.innerHTML = `
+      <div id="drag-src">Source Card</div>
+      <div id="drag-tgt">Target Column</div>
+    `;
+    const src = document.getElementById('drag-src') as HTMLElement;
+    const tgt = document.getElementById('drag-tgt') as HTMLElement;
+
+    normalizer.recordDragDrop(src, tgt);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('drag_drop');
+    expect(emittedSteps[0].dragTarget).toBeDefined();
+    expect(emittedSteps[0].dragTarget?.locators[0].value).toBe('drag-tgt');
+  });
+
+  it('records iframe switch action', () => {
+    document.body.innerHTML = '<iframe id="payment-frame" src="about:blank"></iframe>';
+    const iframe = document.getElementById('payment-frame') as HTMLIFrameElement;
+
+    normalizer.recordIframeSwitch(iframe);
+
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('switch_iframe');
+    expect(emittedSteps[0].iframePath).toBe('payment-frame');
+  });
+
+  it('records print_value action extracting text or input value', () => {
+    document.body.innerHTML = `
+      <h2 id="heading">Total Balance: $4,500</h2>
+      <input id="acc-num" type="text" value="987654321" />
+    `;
+    const heading = document.getElementById('heading') as HTMLElement;
+    const input = document.getElementById('acc-num') as HTMLInputElement;
+
+    normalizer.recordPrintValue(heading);
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('print_value');
+    expect(emittedSteps[0].value).toBe('Total Balance: $4,500');
+
+    normalizer.recordPrintValue(input);
+    expect(emittedSteps.length).toBe(2);
+    expect(emittedSteps[1].action).toBe('print_value');
+    expect(emittedSteps[1].value).toBe('987654321');
+  });
 });
 

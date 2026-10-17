@@ -12,7 +12,12 @@ export type MessageType =
   | 'HOVER_ELEMENT_INSPECTED'
   | 'START_INSPECTING'
   | 'STOP_INSPECTING'
-  | 'ELEMENT_SELECTED';
+  | 'ELEMENT_SELECTED'
+  | 'UPDATE_CODE_STYLE'
+  | 'UPDATE_ENGINE'
+  | 'ADD_NAVIGATE_STEP'
+  | 'ADD_WAIT_STEP'
+  | 'ADD_TAB_STEP';
 
 export interface StartRecordingPayload {
   tabId?: number;
@@ -46,6 +51,8 @@ export interface HoverElementInspectedPayload {
   tagName: string;
   locators: LocatorCandidate[];
   text?: string;
+  componentType?: string;
+  componentHierarchy?: string;
 }
 
 export interface ElementSelectedPayload {
@@ -71,4 +78,9 @@ export type ExtensionMessage =
   | { type: 'HOVER_ELEMENT_INSPECTED'; payload: HoverElementInspectedPayload }
   | { type: 'START_INSPECTING' }
   | { type: 'STOP_INSPECTING' }
-  | { type: 'ELEMENT_SELECTED'; payload: ElementSelectedPayload };
+  | { type: 'ELEMENT_SELECTED'; payload: ElementSelectedPayload }
+  | { type: 'UPDATE_CODE_STYLE'; payload: { codeStyle: 'simple' | 'enterprise' | 'pytest' } }
+  | { type: 'UPDATE_ENGINE'; payload: { engine: 'selenium' | 'playwright' } }
+  | { type: 'ADD_NAVIGATE_STEP'; payload: { url: string } }
+  | { type: 'ADD_WAIT_STEP'; payload: { seconds: number } }
+  | { type: 'ADD_TAB_STEP'; payload: { action: 'switch_tab' | 'close_tab'; url?: string } };

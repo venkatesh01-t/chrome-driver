@@ -4,20 +4,52 @@
   <meta charset="UTF-8">
   <title>E2E Demo Web App - Selenium Recorder Testbed</title>
   <style>
-    body { font-family: sans-serif; padding: 2rem; background: #f8fafc; color: #1e293b; max-width: 600px; margin: 0 auto; }
+    body { font-family: sans-serif; padding: 2rem; background: #f8fafc; color: #1e293b; max-width: 760px; margin: 0 auto; }
+    header { background: #0f172a; color: white; padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    nav a { color: #94a3b8; text-decoration: none; margin-left: 1rem; font-weight: 500; font-size: 0.9rem; }
+    nav a:hover, nav a.active { color: white; }
     .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem; }
     .form-group { margin-bottom: 1rem; }
     label { display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem; }
-    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="search"], select, textarea { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
     button { background: #2563eb; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
     button:hover { background: #1d4ed8; }
+    .btn-secondary { background: #64748b; }
     .btn-dynamic { background: #059669; }
     .btn-scroll { background: #7c3aed; }
-    .scroll-spacer { height: 750px; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); border-radius: 8px; margin: 2rem 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: 600; }
+    .scroll-spacer { height: 400px; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); border-radius: 8px; margin: 2rem 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; }
+    .tab-list { display: flex; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 1rem; }
+    .tab-btn { background: none; border: none; padding: 0.5rem 1rem; color: #64748b; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+    dialog { border: none; border-radius: 8px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    dialog::backdrop { background: rgba(0,0,0,0.5); }
+    footer { margin-top: 3rem; padding: 1.5rem; background: #f1f5f9; border-radius: 8px; text-align: center; color: #64748b; font-size: 0.85rem; }
   </style>
 </head>
 <body>
-  <h1>Selenium Recorder Demo App</h1>
+
+  <!-- Header with Navigation -->
+  <header>
+    <div style="font-weight: 700; font-size: 1.1rem;">⚡ Selenium Demo</div>
+    <nav>
+      <a href="#home" class="active">Home</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#settings">Settings</a>
+      <button data-testid="menu-toggle" style="margin-left: 1rem; padding: 0.3rem 0.6rem; font-size: 0.8rem;">Menu</button>
+    </nav>
+  </header>
+
+  <!-- Search & Filter Card -->
+  <div class="card" role="search">
+    <h2>Search Elements</h2>
+    <div class="form-group">
+      <label for="search-input">Global Search</label>
+      <input id="search-input" name="search_term" type="search" placeholder="Type query and press Enter..." />
+    </div>
+  </div>
 
   <!-- Standard Login & Profile Form -->
   <div class="card">
@@ -53,13 +85,71 @@
       </div>
 
       <div class="form-group">
+        <label for="avatar-upload">Profile Picture</label>
+        <input id="avatar-upload" name="avatar" type="file" accept="image/*" />
+      </div>
+
+      <div class="form-group">
         <label>
           <input id="remember-me" name="remember" type="checkbox" /> Remember me on this device
         </label>
       </div>
 
       <button id="login-button" type="button">Save Account Info</button>
+      <button id="open-dialog-btn" type="button" class="btn-secondary" onclick="document.getElementById('confirm-dialog').showModal()">Open Dialog</button>
     </form>
+  </div>
+
+  <!-- Modal Dialog -->
+  <dialog id="confirm-dialog">
+    <h3>Confirm Action</h3>
+    <p>Are you sure you want to proceed with this update?</p>
+    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+      <button id="modal-cancel" class="btn-secondary" onclick="document.getElementById('confirm-dialog').close()">Cancel</button>
+      <button id="modal-confirm" onclick="document.getElementById('confirm-dialog').close()">Confirm</button>
+    </div>
+  </dialog>
+
+  <!-- Tab Panel -->
+  <div class="card">
+    <h2>Tab Navigation</h2>
+    <div class="tab-list" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-overview">Overview</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-users">Users</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-billing">Billing</button>
+    </div>
+    <div id="tab-content">
+      <p>Active tab contents displayed here.</p>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="card">
+    <h2>Registered Users</h2>
+    <table id="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Alice Johnson</td>
+          <td>alice@company.com</td>
+          <td>Admin</td>
+          <td>Active</td>
+        </tr>
+        <tr>
+          <td>Bob Smith</td>
+          <td>bob@company.com</td>
+          <td>Editor</td>
+          <td>Pending</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Dynamic Elements -->
@@ -76,8 +166,15 @@
 
   <div class="card">
     <h2>Footer Actions (Scrolled Section)</h2>
-    <p>Verify that elements requiring page scrolling generate scrollIntoView:</p>
+    <p>Verify that elements requiring page scrolling generate scroll commands:</p>
     <button id="deep-scroll-btn" class="btn-scroll" type="button">Complete All Registrations</button>
   </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2026 Selenium Automation Recorder. All rights reserved.</p>
+    <p><a href="#privacy">Privacy Policy</a> • <a href="#terms">Terms of Service</a></p>
+  </footer>
+
 </body>
 </html>

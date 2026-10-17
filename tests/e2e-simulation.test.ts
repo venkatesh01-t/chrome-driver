@@ -106,7 +106,8 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     expect(steps[6].action).toBe('click');
     expect(steps[6].target.locators[0].value).toBe('deep-scroll-btn');
 
-    // Generate Python Selenium Script
+    // Generate Enterprise Python Selenium Script
+    sessionManager.activeTestCase!.settings.codeStyle = 'enterprise';
     const pythonCode = generateSeleniumScript(sessionManager.activeTestCase!);
 
     // Revalidation Assertions on the Generated Python Code
@@ -144,5 +145,12 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     expect(pythonCode).toContain('driver = webdriver.Chrome(options=options)');
     expect(pythonCode).toContain('driver.get("https://demo.example.com/app")');
     expect(pythonCode).toContain('driver.quit()');
+
+    // Also verify Simple mode generation works seamlessly on the same session
+    sessionManager.activeTestCase!.settings.codeStyle = 'simple';
+    const simpleCode = generateSeleniumScript(sessionManager.activeTestCase!);
+    expect(simpleCode).toContain('def find(driver, by, value, timeout=10):');
+    expect(simpleCode).toContain('driver.maximize_window()');
+    expect(simpleCode).toContain('driver.quit()');
   });
 });

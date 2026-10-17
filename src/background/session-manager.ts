@@ -135,6 +135,24 @@ export class SessionManager {
     this.notify();
   }
 
+  public async updateCodeStyle(style: 'simple' | 'enterprise' | 'pytest'): Promise<void> {
+    if (!this._activeTestCase) {
+      this._activeTestCase = createTestCase('Automated Test', '');
+    }
+    this._activeTestCase.settings.codeStyle = style;
+    this._activeTestCase.updatedAt = Date.now();
+    await this.persist();
+  }
+
+  public async updateEngine(engine: 'selenium' | 'playwright'): Promise<void> {
+    if (!this._activeTestCase) {
+      this._activeTestCase = createTestCase('Automated Test', '');
+    }
+    this._activeTestCase.settings.engine = engine;
+    this._activeTestCase.updatedAt = Date.now();
+    await this.persist();
+  }
+
   private async persist(): Promise<void> {
     await this.storage.set('sessionState', {
       isRecording: this._isRecording,

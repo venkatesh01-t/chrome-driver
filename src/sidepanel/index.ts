@@ -1,6 +1,6 @@
 import { TestCaseModel } from '../types/model';
 import { renderEmptyState, renderStepCard } from './ui-renderer';
-import { generateSeleniumScript } from '../generator/python-generator';
+import { generateAutomationScript } from '../generator/python-generator';
 import { ExtensionMessage, ElementSelectedPayload } from '../types/messages';
 
 let isRecording = false;
@@ -20,6 +20,9 @@ const stepsView = document.getElementById('stepsView') as HTMLDivElement;
 const codeView = document.getElementById('codeView') as HTMLDivElement;
 const pythonCodeOutput = document.getElementById('pythonCodeOutput') as HTMLElement;
 const copyCodeBtn = document.getElementById('copyCodeBtn') as HTMLButtonElement;
+const downloadCodeBtn = document.getElementById('downloadCodeBtn') as HTMLButtonElement;
+const codeLangLabel = document.getElementById('codeLangLabel') as HTMLDivElement;
+const addTabBtn = document.getElementById('addTabBtn') as HTMLButtonElement;
 const inspectionBar = document.getElementById('inspectionBar') as HTMLDivElement;
 const inspectedTag = document.getElementById('inspectedTag') as HTMLSpanElement;
 const inspectedSelector = document.getElementById('inspectedSelector') as HTMLSpanElement;
@@ -120,12 +123,41 @@ function updateUI(): void {
     }
   }
 
+  // Update Engine and Code Style
+  const activeEngine = activeTestCase?.settings?.engine || 'selenium';
+  const activeStyle = activeTestCase?.settings?.codeStyle || 'simple';
+  const styleTitle = activeStyle.charAt(0).toUpperCase() + activeStyle.slice(1);
+
+  if (codeLangLabel) {
+    codeLangLabel.textContent = activeEngine === 'playwright'
+      ? `Python (Playwright - ${styleTitle})`
+      : `Python (Selenium 4 - ${styleTitle})`;
+  }
+
   // Update Python Code Output
   if (activeTestCase && steps.length > 0) {
-    pythonCodeOutput.textContent = generateSeleniumScript(activeTestCase);
+    pythonCodeOutput.textContent = generateAutomationScript(activeTestCase);
   } else {
-    pythonCodeOutput.textContent = '# Click Record to start capturing actions and generating Python tests...';
+    pythonCodeOutput.textContent = `# Click Record to start capturing actions and generating ${activeEngine === 'playwright' ? 'Playwright' : 'Selenium'} tests...`;
   }
+
+  // Update Engine Selector Buttons
+  document.querySelectorAll<HTMLButtonElement>('.engine-btn').forEach((btn) => {
+    if (btn.getAttribute('data-engine') === activeEngine) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Update Code Style Selector Buttons
+  document.querySelectorAll<HTMLButtonElement>('.style-btn').forEach((btn) => {
+    if (btn.getAttribute('data-style') === activeStyle) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
 }
 
 function scrollToLatestStep(): void {
@@ -313,6 +345,99 @@ tabCodeBtn.addEventListener('click', () => {
 
 // Copy Code Button
 bindCopy(copyCodeBtn, () => pythonCodeOutput?.textContent || '');
+
+// Download Python Script Button
+if (downloadCodeBtn) {
+  downloadCodeBtn.addEventListener('click', () => {
+    const code = pythonCodeOutput?.textContent || '';
+    if (!code || code.startsWith('# Click Record')) {
+      alert('Please record some steps first to generate Python code!');
+      return;
+    }
+    const engine = activeTestCase?.settings?.engine || 'selenium';
+    const style = activeTestCase?.settings?.codeStyle || 'simple';
+    const filename = `test_${engine}_${style}.py`;
+
+    const blob = new Blob([code], { type: 'text/x-python;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
+// Engine Switching (Selenium 4 vs Playwright)
+document.querySelectorAll<HTMLButtonElement>('.engine-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const engine = btn.getAttribute('data-engine') as 'selenium' | 'playwright';
+    if (!engine) return;
+    document.querySelectorAll('.engine-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage({ type: 'UPDATE_ENGINE', payload: { engine } }, () => refreshState());
+    }
+  });
+});
+
+// Code Style Switching
+document.querySelectorAll<HTMLButtonElement>('.style-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const style = btn.getAttribute('data-style') as 'simple' | 'enterprise' | 'pytest';
+    if (!style) return;
+    document.querySelectorAll('.style-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage({ type: 'UPDATE_CODE_STYLE', payload: { codeStyle: style } }, () => refreshState());
+    }
+  });
+});
+
+// Quick Action: Add Tab Switch Step
+if (addTabBtn) {
+  addTabBtn.addEventListener('click', () => {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+      const currentTab = tabs[0];
+      const tabIndexStr = prompt('Enter target tab index (e.g. -1 for latest opened tab, 0 for first tab):', '-1');
+      if (tabIndexStr !== null && chrome.runtime) {
+        const parsedIdx = parseInt(tabIndexStr, 10);
+        chrome.runtime.sendMessage(
+          {
+            type: 'ADD_TAB_STEP',
+            payload: {
+              tabIndex: isNaN(parsedIdx) ? -1 : parsedIdx,
+              tabTitle: currentTab?.title || 'Browser Tab',
+              tabUrl: currentTab?.url || '',
+            },
+          },
+          () => refreshState()
+        );
+      }
+    });
+  });
+}
+
+// Quick Action: Add Navigate Step
+document.getElementById('addNavigateBtn')?.addEventListener('click', () => {
+  const url = prompt('Enter URL to navigate to:');
+  if (url && typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({ type: 'ADD_NAVIGATE_STEP', payload: { url } }, () => refreshState());
+  }
+});
+
+// Quick Action: Add Wait Step
+document.getElementById('addWaitBtn')?.addEventListener('click', () => {
+  const secs = prompt('Wait duration in seconds:', '2');
+  if (secs && typeof chrome !== 'undefined' && chrome.runtime) {
+    const seconds = parseInt(secs, 10) || 2;
+    chrome.runtime.sendMessage({ type: 'ADD_WAIT_STEP', payload: { seconds } }, () => refreshState());
+  }
+});
 
 // Storage Change Listener for real-time reactivity
 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {

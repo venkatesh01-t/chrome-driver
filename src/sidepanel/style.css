@@ -761,3 +761,233 @@ body {
   animation: highlightNewStep 1s ease-out;
 }
 
+/* Component Type Badges */
+.badge-component {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-right: 4px;
+  letter-spacing: 0.3px;
+}
+.badge-component.header   { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+.badge-component.navbar   { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); }
+.badge-component.footer   { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.4); }
+.badge-component.modal    { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+.badge-component.dialog   { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
+.badge-component.form     { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+.badge-component.input    { background: rgba(20, 184, 166, 0.2); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.4); }
+.badge-component.table    { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+.badge-component.button   { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+.badge-component.card     { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4); }
+.badge-component.link     { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+.badge-component.dropdown { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
+.badge-component.assert   { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+.badge-component.generic  { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+/* Assertion Step Styling */
+.step-card.assertion {
+  border-left: 3px solid #f97316;
+  background: rgba(249, 115, 22, 0.05);
+}
+
+/* Print/Extract Value Step Styling */
+.step-card.print-value {
+  border-left: 3px solid #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.step-badge.badge-print_value {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.print-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #10b981;
+  margin-right: 4px;
+}
+
+/* Shortcut Tip Bar */
+.shortcut-tip-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(59, 130, 246, 0.06);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.shortcut-tip-bar .tip-icon {
+  font-size: 12px;
+}
+
+.shortcut-tip-bar b {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.step-hierarchy {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assert-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f97316;
+  margin-right: 4px;
+}
+
+/* Code Style Selector */
+.code-style-selector {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.style-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.style-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.style-btn.active {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Engine Selector (Selenium 4 vs Playwright) */
+.engine-selector {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.engine-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.engine-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.engine-btn.active {
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: #ffffff;
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+}
+
+.engine-btn[data-engine="playwright"].active {
+  background: linear-gradient(135deg, #065f46, #059669);
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+}
+
+.engine-icon {
+  font-size: 13px;
+}
+
+/* Code Action Buttons */
+.code-btn-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-secondary {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  color: #94a3b8;
+}
+
+.btn-secondary:hover {
+  background: rgba(51, 65, 85, 0.9);
+  color: #f1f5f9;
+  border-color: #64748b;
+}
+
+#downloadCodeBtn {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+#downloadCodeBtn:hover {
+  background: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+/* Tab Switch Step Badge & Card */
+.step-card.tab-switch {
+  border-left: 3px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.step-badge.badge-switch_tab {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.tab-switch-details {
+  font-size: 11px;
+  color: #c084fc;
+  font-family: var(--font-mono);
+  background: rgba(139, 92, 246, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+

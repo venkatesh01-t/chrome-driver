@@ -25,7 +25,46 @@ export type ActionType =
   | 'checkbox'
   | 'radio'
   | 'select'
-  | 'hover';
+  | 'hover'
+  | 'assert_visible'
+  | 'assert_text'
+  | 'assert_attribute'
+  | 'print_value'
+  | 'navigate'
+  | 'switch_tab'
+  | 'close_tab'
+  | 'switch_iframe'
+  | 'press_key'
+  | 'scroll'
+  | 'upload_file'
+  | 'drag_drop'
+  | 'wait';
+
+export type ComponentType =
+  | 'header'
+  | 'navbar'
+  | 'footer'
+  | 'sidebar'
+  | 'modal'
+  | 'dialog'
+  | 'drawer'
+  | 'dropdown'
+  | 'menu'
+  | 'table'
+  | 'tab'
+  | 'card'
+  | 'form'
+  | 'button'
+  | 'link'
+  | 'input'
+  | 'image'
+  | 'iframe'
+  | 'hero'
+  | 'accordion'
+  | 'tooltip'
+  | 'breadcrumb'
+  | 'pagination'
+  | 'generic';
 
 export interface TargetElementModel {
   tagName: string;
@@ -37,6 +76,9 @@ export interface TargetElementModel {
   labelText?: string;
   shadowHostSelector?: string;
   isShadowDom?: boolean;
+  componentType?: ComponentType;
+  componentHierarchy?: string;
+  dataFeedType?: string;
 }
 
 export interface TestStep {
@@ -49,12 +91,23 @@ export interface TestStep {
   variableName?: string;
   waitCondition: 'clickable' | 'visible' | 'presence';
   timestamp: number;
+  assertExpected?: string;
+  assertAttribute?: string;
+  keyCombo?: string;
+  dragTarget?: TargetElementModel;
+  iframePath?: string;
+  waitDuration?: number;
+  tabIndex?: number;
+  tabTitle?: string;
+  tabUrl?: string;
 }
 
 export interface TestCaseSettings {
   timeout: number;
   useExplicitWait: boolean;
   maskSensitiveData: boolean;
+  codeStyle: 'simple' | 'enterprise' | 'pytest';
+  engine?: 'selenium' | 'playwright';
 }
 
 export interface TestCaseModel {
@@ -78,6 +131,8 @@ export function createTestCase(name: string, url: string = ''): TestCaseModel {
       timeout: 10,
       useExplicitWait: true,
       maskSensitiveData: true,
+      codeStyle: 'simple',
+      engine: 'selenium',
     },
     createdAt: now,
     updatedAt: now,
@@ -87,21 +142,45 @@ export function createTestCase(name: string, url: string = ''): TestCaseModel {
 export function createTestStep(params: {
   stepNumber: number;
   action: ActionType;
-  target: TargetElementModel;
+  target?: TargetElementModel;
   value?: string;
   isSensitive?: boolean;
   variableName?: string;
   waitCondition?: 'clickable' | 'visible' | 'presence';
+  assertExpected?: string;
+  assertAttribute?: string;
+  keyCombo?: string;
+  dragTarget?: TargetElementModel;
+  iframePath?: string;
+  waitDuration?: number;
+  tabIndex?: number;
+  tabTitle?: string;
+  tabUrl?: string;
 }): TestStep {
+  const defaultTarget: TargetElementModel = {
+    tagName: params.action === 'switch_tab' ? 'tab' : 'element',
+    locators: [],
+    selectedLocatorIndex: 0,
+  };
+
   return {
     id: `step_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     stepNumber: params.stepNumber,
     action: params.action,
-    target: params.target,
+    target: params.target || defaultTarget,
     value: params.value,
     isSensitive: params.isSensitive ?? false,
     variableName: params.variableName,
     waitCondition: params.waitCondition ?? (params.action === 'click' ? 'clickable' : 'visible'),
     timestamp: Date.now(),
+    assertExpected: params.assertExpected,
+    assertAttribute: params.assertAttribute,
+    keyCombo: params.keyCombo,
+    dragTarget: params.dragTarget,
+    iframePath: params.iframePath,
+    waitDuration: params.waitDuration,
+    tabIndex: params.tabIndex,
+    tabTitle: params.tabTitle,
+    tabUrl: params.tabUrl,
   };
 }

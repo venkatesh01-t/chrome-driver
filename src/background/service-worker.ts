@@ -1,5 +1,6 @@
 import { SessionManager } from './session-manager';
 import { ExtensionMessage } from '../types/messages';
+import { createTestStep } from '../types/model';
 
 const sessionManager = new SessionManager();
 sessionManager.restore();
@@ -113,6 +114,71 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
             break;
           }
 
+          case 'UPDATE_CODE_STYLE': {
+            if (message.payload?.codeStyle) {
+              await sessionManager.updateCodeStyle(message.payload.codeStyle);
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'UPDATE_ENGINE': {
+            if (message.payload?.engine) {
+              await sessionManager.updateEngine(message.payload.engine);
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'ADD_NAVIGATE_STEP': {
+            if (message.payload?.url) {
+              const step = createTestStep({
+                stepNumber: 0,
+                action: 'navigate',
+                target: { tagName: 'window', locators: [], selectedLocatorIndex: 0, componentType: 'generic' },
+                value: message.payload.url,
+                waitCondition: 'presence',
+              });
+              await sessionManager.addStep(step, message.payload.url);
+            }
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'ADD_WAIT_STEP': {
+            const seconds = message.payload?.seconds || 2;
+            const step = createTestStep({
+              stepNumber: 0,
+              action: 'wait',
+              target: { tagName: 'page', locators: [], selectedLocatorIndex: 0, componentType: 'generic' },
+              waitCondition: 'presence',
+              waitDuration: seconds,
+            });
+            await sessionManager.addStep(step);
+            sendResponse({ success: true });
+            break;
+          }
+
+          case 'ADD_TAB_STEP': {
+            const action = message.payload?.action || 'switch_tab';
+            const step = createTestStep({
+              stepNumber: 0,
+              action,
+              target: {
+                tagName: 'window',
+                locators: [],
+                selectedLocatorIndex: 0,
+                componentType: 'tab',
+                text: action === 'switch_tab' ? 'Switch to latest tab' : 'Close active tab',
+              },
+              value: message.payload?.url || '',
+              waitCondition: 'presence',
+            });
+            await sessionManager.addStep(step);
+            sendResponse({ success: true });
+            break;
+          }
+
           default:
             sendResponse({ unknown: true });
         }
@@ -125,6 +191,8 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
 
 // Keep multi-tab recording synchronized across all tabs and navigations
 if (typeof chrome !== 'undefined' && chrome.tabs) {
+  let lastRecordedTabId: number | null = null;
+
   if (chrome.tabs.onUpdated) {
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (
@@ -142,7 +210,20 @@ if (typeof chrome !== 'undefined' && chrome.tabs) {
   if (chrome.tabs.onActivated) {
     chrome.tabs.onActivated.addListener(async (activeInfo) => {
       if (sessionManager.isRecording) {
+        if (lastRecordedTabId !== null && lastRecordedTabId !== activeInfo.tabId) {
+          // Automatic cross-tab switch detection while recording
+          const step = createTestStep({
+            stepNumber: 0,
+            action: 'switch_tab',
+            target: { tagName: 'window', locators: [], selectedLocatorIndex: 0, componentType: 'tab', text: 'Switch to new tab' },
+            waitCondition: 'presence',
+          });
+          await sessionManager.addStep(step);
+        }
+        lastRecordedTabId = activeInfo.tabId;
         chrome.tabs.sendMessage(activeInfo.tabId, { type: 'START_RECORDING' }).catch(() => {});
+      } else {
+        lastRecordedTabId = activeInfo.tabId;
       }
     });
   }
