@@ -5,11 +5,20 @@ import { createTestStep } from '../types/model';
 const sessionManager = new SessionManager();
 sessionManager.restore();
 
-// Handle Side Panel open on extension action click
+// Do NOT force side-by-side open on action click.
+// Instead, let action click toggle the floating in-page HUD toolbar across all tabs without squashing viewports.
 if (typeof chrome !== 'undefined' && chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
   chrome.sidePanel
-    .setPanelBehavior({ openPanelOnActionClick: true })
+    .setPanelBehavior({ openPanelOnActionClick: false })
     .catch((error) => console.error('Error setting panel behavior:', error));
+}
+
+if (typeof chrome !== 'undefined' && chrome.action && chrome.action.onClicked) {
+  chrome.action.onClicked.addListener((tab) => {
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_HUD' }).catch(() => {});
+    }
+  });
 }
 
 // Handle messages from content scripts and side panel
@@ -224,6 +233,14 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
             });
             await sessionManager.addStep(step);
             sendResponse({ success: true });
+            break;
+          }
+
+          case 'LOAD_SESSION': {
+            if (message.payload?.testCase) {
+              await sessionManager.loadTestCase(message.payload.testCase);
+            }
+            sendResponse({ success: true, activeTestCase: sessionManager.activeTestCase });
             break;
           }
 

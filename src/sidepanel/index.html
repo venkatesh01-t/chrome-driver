@@ -45,6 +45,13 @@
       <button id="addTabBtn" class="btn btn-secondary" title="Open or Switch Tab Step">
         <span>🗂️ Tab</span>
       </button>
+      <button id="exportJsonBtn" class="btn btn-secondary btn-icon-only" title="Export Session (JSON)">
+        <span>📥</span>
+      </button>
+      <button id="importJsonBtn" class="btn btn-secondary btn-icon-only" title="Import Session (JSON)">
+        <span>📤</span>
+      </button>
+      <input type="file" id="importJsonInput" accept=".json,application/json" style="display: none;" />
       <button id="clearBtn" class="btn btn-secondary btn-icon-only" title="Clear all steps">
         <span>🗑</span>
       </button>
@@ -133,11 +140,15 @@
           <button class="style-btn active" data-style="simple">Simple</button>
           <button class="style-btn" data-style="enterprise">Enterprise</button>
           <button class="style-btn" data-style="pytest">Pytest</button>
+          <button class="style-btn" data-style="pom">POM</button>
         </div>
 
         <div class="code-actions">
           <span id="codeLangLabel" class="code-lang">Python (Selenium 4)</span>
           <div class="code-btn-group">
+            <button id="exportJsonCodeBtn" class="btn btn-sm btn-secondary" title="Export session as JSON">
+              <span>📥 Export JSON</span>
+            </button>
             <button id="copyCodeBtn" class="btn btn-sm btn-primary" title="Copy code to clipboard">
               <span>📋 Copy</span>
             </button>

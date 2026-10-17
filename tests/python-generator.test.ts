@@ -3,6 +3,9 @@ import {
   generateSeleniumScript,
   generateSimpleScript,
   generatePytestScript,
+  generatePomScript,
+  getFallbackLocatorTuples,
+  inferSemanticStepName,
 } from '../src/generator/python-generator';
 import { createTestCase, createTestStep } from '../src/types/model';
 
@@ -347,4 +350,198 @@ describe('Python Selenium Code Generator', () => {
       expect(code).toContain('assert wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".cart-count"))).is_displayed()');
     });
   });
+
+  describe('Multi-Locator Self-Healing Code Generation', () => {
+    it('extracts top 3 validated unique locators for fallback chaining', () => {
+      const step = createTestStep({
+        stepNumber: 1,
+        action: 'click',
+        target: {
+          tagName: 'button',
+          locators: [
+            { strategy: 'id', value: 'btn-submit', isUnique: true, matchCount: 1, score: 95 },
+            { strategy: 'css', value: 'button.btn-primary', isUnique: true, matchCount: 1, score: 85 },
+            { strategy: 'xpath', value: '//button[normalize-space()="Submit"]', isUnique: true, matchCount: 1, score: 80 },
+            { strategy: 'xpath', value: '//form//button[1]', isUnique: false, matchCount: 2, score: 30 },
+          ],
+          selectedLocatorIndex: 0,
+        },
+      });
+
+      const fallbacks = getFallbackLocatorTuples(step, 3);
+      expect(fallbacks).toHaveLength(3);
+      expect(fallbacks[0]).toBe('(By.ID, "btn-submit")');
+      expect(fallbacks[1]).toBe('(By.CSS_SELECTOR, "button.btn-primary")');
+      expect(fallbacks[2]).toBe('(By.XPATH, "//button[normalize-space()=\\"Submit\\"]")');
+    });
+
+    it('injects smart_find and smart_click self-healing helpers in Simple mode', () => {
+      const testCase = createTestCase('Self Healing Test', 'https://example.com');
+      testCase.settings.codeStyle = 'simple';
+      testCase.steps.push(
+        createTestStep({
+          stepNumber: 1,
+          action: 'click',
+          target: {
+            tagName: 'button',
+            locators: [
+              { strategy: 'id', value: 'confirm-btn', isUnique: true, matchCount: 1, score: 95 },
+              { strategy: 'xpath', value: '//button[text()="Confirm"]', isUnique: true, matchCount: 1, score: 85 },
+            ],
+            selectedLocatorIndex: 0,
+          },
+        })
+      );
+
+      const code = generateSimpleScript(testCase);
+      expect(code).toContain('def smart_find(driver, locators, condition=None, timeout=10):');
+      expect(code).toContain('def smart_click(driver, locators, timeout=10):');
+      expect(code).toContain('StaleElementReferenceException');
+      expect(code).toContain('ElementClickInterceptedException');
+      expect(code).toContain('arguments[0].click()');
+      expect(code).toContain('click(driver, *(By.ID, "confirm-btn"))');
+    });
+
+    it('generates multi-locator lists and self-healing methods in POM mode', () => {
+      const testCase = createTestCase('POM Self-Healing Test', 'https://example.com/checkout');
+      testCase.settings.codeStyle = 'pom';
+      testCase.steps.push(
+        createTestStep({
+          stepNumber: 1,
+          action: 'click',
+          target: {
+            tagName: 'button',
+            locators: [
+              { strategy: 'id', value: 'pay-btn', isUnique: true, matchCount: 1, score: 95 },
+              { strategy: 'css', value: '.checkout-pay', isUnique: true, matchCount: 1, score: 80 },
+            ],
+            selectedLocatorIndex: 0,
+            text: 'Pay Now',
+          },
+        })
+      );
+
+      const code = generatePomScript(testCase);
+      expect(code).toContain('LOCATORS_STEP_1 = [');
+      expect(code).toContain('(By.ID, "pay-btn")');
+      expect(code).toContain('(By.CSS_SELECTOR, ".checkout-pay")');
+      expect(code).toContain('def smart_find(self, locators, condition="presence", timeout=None):');
+      expect(code).toContain('def smart_click(self, locators, timeout=None):');
+      expect(code).toContain('self.smart_click(self.LOCATORS_STEP_1)');
+    });
+
+    it('hoists sensitive passwords and test data to prevent hardcoding', () => {
+      const testCase = createTestCase('Data Hoisting Test', 'https://example.com');
+      testCase.settings.codeStyle = 'enterprise';
+      testCase.steps.push(
+        createTestStep({
+          stepNumber: 1,
+          action: 'type',
+          target: {
+            tagName: 'input',
+            name: 'work_email',
+            locators: [{ strategy: 'id', value: 'email', isUnique: true, matchCount: 1, score: 95 }],
+            selectedLocatorIndex: 0,
+          },
+          value: 'user@example.com',
+        }),
+        createTestStep({
+          stepNumber: 2,
+          action: 'type',
+          target: {
+            tagName: 'input',
+            name: 'user_password',
+            locators: [{ strategy: 'css', value: 'input[type="password"]', isUnique: true, matchCount: 1, score: 90 }],
+            selectedLocatorIndex: 0,
+          },
+          value: 'SuperSecret123!',
+        })
+      );
+
+      const code = generateSeleniumScript(testCase);
+      expect(code).toContain('TEST_PASSWORD = os.getenv("TEST_PASSWORD",');
+      expect(code).toContain('TEST_DATA = {');
+      expect(code).toContain('"work_email":');
+      expect(code).not.toContain('.send_keys("SuperSecret123!")');
+      expect(code).toContain('.send_keys(TEST_PASSWORD)');
+    });
+
+    it('infers clean snake_case semantic step names for POM mode', () => {
+      const step1 = createTestStep({
+        stepNumber: 1,
+        action: 'click',
+        target: {
+          tagName: 'button',
+          text: 'Save Account Info',
+          locators: [{ strategy: 'id', value: 'save-btn', isUnique: true, matchCount: 1, score: 90 }],
+          selectedLocatorIndex: 0,
+        },
+      });
+      expect(inferSemanticStepName(step1)).toBe('click_save_account_info');
+
+      const step2 = createTestStep({
+        stepNumber: 2,
+        action: 'type',
+        target: {
+          tagName: 'input',
+          name: 'work_email',
+          locators: [{ strategy: 'id', value: 'email', isUnique: true, matchCount: 1, score: 90 }],
+          selectedLocatorIndex: 0,
+        },
+      });
+      expect(inferSemanticStepName(step2)).toBe('fill_work_email');
+    });
+
+    it('generates multi-level shadow DOM traversal and iframe transitions cleanly', () => {
+      const testCase = createTestCase('Shadow & Iframe Test', 'https://example.com');
+      testCase.settings.codeStyle = 'enterprise';
+      testCase.steps.push(
+        createTestStep({
+          stepNumber: 1,
+          action: 'click',
+          shadowHosts: ['gt-ess-portal', 'gt-attendance-widget'],
+          target: {
+            tagName: 'button',
+            locators: [{ strategy: 'css', value: '#shadow-swipe-btn', isUnique: true, matchCount: 1, score: 90 }],
+            selectedLocatorIndex: 0,
+          },
+        }),
+        createTestStep({
+          stepNumber: 2,
+          action: 'type',
+          iframeSelector: '#payment-iframe',
+          target: {
+            tagName: 'input',
+            locators: [{ strategy: 'css', value: '#card-number', isUnique: true, matchCount: 1, score: 90 }],
+            selectedLocatorIndex: 0,
+          },
+          value: '4111222233334444',
+        }),
+        createTestStep({
+          stepNumber: 3,
+          action: 'click',
+          target: {
+            tagName: 'button',
+            locators: [{ strategy: 'id', value: 'main-submit', isUnique: true, matchCount: 1, score: 90 }],
+            selectedLocatorIndex: 0,
+          },
+        })
+      );
+
+      const code = generateSeleniumScript(testCase);
+      // Multi-level shadow traversal
+      expect(code).toContain('curr_root = h_el.shadow_root');
+      expect(code).toContain('gt-ess-portal');
+      expect(code).toContain('gt-attendance-widget');
+
+      // Stateful iframe switching
+      expect(code).toContain('driver.switch_to.frame(');
+      expect(code).toContain('driver.switch_to.default_content()');
+
+      // Overlay guard in smart_click
+      expect(code).toContain('aria-busy');
+      expect(code).toContain('loading-overlay');
+    });
+  });
 });
+

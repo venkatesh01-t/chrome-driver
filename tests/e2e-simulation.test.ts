@@ -153,4 +153,101 @@ describe('End-to-End Recording & Python Revalidation Suite', () => {
     expect(simpleCode).toContain('driver.maximize_window()');
     expect(simpleCode).toContain('driver.quit()');
   });
+
+  it('accurately records and revalidates all complex UI torture cases from demo-app.html', async () => {
+    await sessionManager.startRecording({
+      name: 'Torture Testbed Suite',
+      url: 'https://demo.example.com/app',
+    });
+
+    // 1. SVG Click Normalization (Clicks on <path> inside <button>)
+    const svgPath = document.querySelector('header button[aria-label="Notifications"] svg path') as SVGElement;
+    expect(svgPath).not.toBeNull();
+    const parentBtn = svgPath.closest('button') as HTMLButtonElement;
+    normalizer.recordClick(parentBtn);
+
+    // 2. Table Row Contextual Anchoring (Approve button for Bob Smith)
+    const bobRow = Array.from(document.querySelectorAll('#users-table tbody tr')).find((tr) =>
+      tr.textContent?.includes('Bob Smith')
+    ) as HTMLTableRowElement;
+    expect(bobRow).not.toBeNull();
+    const approveBtn = bobRow.querySelectorAll('button')[0] as HTMLButtonElement;
+    normalizer.recordClick(approveBtn);
+
+    // 3. Dynamic Entropy ID Input
+    const entropyInput = document.querySelector('#entropy-container input') as HTMLInputElement;
+    expect(entropyInput).not.toBeNull();
+    normalizer.recordInput(entropyInput, 'CC-9900');
+    normalizer.flushInput();
+
+    // 4. Custom Combobox and Option
+    const comboboxTrigger = document.querySelector('[role="combobox"]') as HTMLElement;
+    normalizer.recordClick(comboboxTrigger);
+    const optionBlue = Array.from(document.querySelectorAll('[role="option"]')).find(
+      (el) => el.textContent?.includes('Production Blue')
+    ) as HTMLElement;
+    normalizer.recordClick(optionBlue);
+
+    // 5. ContentEditable Rich Text Entry
+    const richEditor = document.querySelector('.rich-editor[contenteditable="true"]') as HTMLElement;
+    normalizer.recordInput(richEditor, 'Release 3.0 Production Deployment Summary');
+    normalizer.flushInput();
+
+    const steps = sessionManager.activeTestCase!.steps;
+    expect(steps.length).toBe(6);
+
+    // Step 1: SVG button resolved to button
+    expect(steps[0].action).toBe('click');
+    expect(steps[0].target.tagName).toBe('button');
+    expect(steps[0].target.locators[0].value).toContain('Notifications');
+
+    // Step 2: Row Contextual Anchoring for Bob Smith's Approve button
+    expect(steps[1].action).toBe('click');
+    const topRowLocator = steps[1].target.locators[0];
+    expect(topRowLocator.strategy).toBe('xpath');
+    expect(topRowLocator.value).toContain('Bob Smith');
+    expect(topRowLocator.value).toContain('Approve');
+    expect(topRowLocator.score).toBeGreaterThanOrEqual(95);
+
+    // Step 3: Dynamic Entropy Input
+    expect(steps[2].action).toBe('type');
+    expect(steps[2].value).toBe('CC-9900');
+    expect(steps[2].target.labelText).toBe('Cost Center Code');
+    const dynamicIdCandidate = steps[2].target.locators.find((l) => l.strategy === 'id');
+    if (dynamicIdCandidate) {
+      expect(dynamicIdCandidate.score).toBeLessThanOrEqual(20);
+      expect(dynamicIdCandidate.warning).toBe('dynamic_id');
+    }
+    const topEntropyLocator = steps[2].target.locators[0];
+    expect(topEntropyLocator.value).toContain('Cost Center Code');
+
+    // Step 4: Combobox
+    expect(steps[3].action).toBe('click');
+    expect(steps[3].target.locators.some((l) => l.value.includes('role="combobox"'))).toBe(true);
+
+    // Step 5: Option
+    expect(steps[4].action).toBe('click');
+    expect(steps[4].target.locators.some((l) => l.value.includes('Production Blue'))).toBe(true);
+
+    // Step 6: ContentEditable
+    expect(steps[5].action).toBe('type');
+    expect(steps[5].value).toBe('Release 3.0 Production Deployment Summary');
+    expect(steps[5].target.semanticType).toBe('contenteditable');
+
+    // 7. Embedded Payment Iframe
+    const paymentIframe = document.getElementById('payment-iframe') as HTMLIFrameElement;
+    expect(paymentIframe).not.toBeNull();
+    normalizer.recordIframeSwitch(paymentIframe);
+    expect(steps[6].action).toBe('switch_iframe');
+    expect(steps[6].iframePath).toContain('payment-iframe');
+
+    // Generate Enterprise script and verify locators & iframe switching
+    sessionManager.activeTestCase!.settings.codeStyle = 'enterprise';
+    const enterpriseCode = generateSeleniumScript(sessionManager.activeTestCase!);
+    expect(enterpriseCode).toContain('Bob Smith');
+    expect(enterpriseCode).toContain('Cost Center Code');
+    expect(enterpriseCode).toContain('Production Blue');
+    expect(enterpriseCode).toContain('driver.switch_to.frame');
+  });
 });
+

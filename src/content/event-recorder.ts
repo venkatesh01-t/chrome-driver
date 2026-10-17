@@ -3,6 +3,56 @@ import { ExtensionMessage } from '../types/messages';
 import { generateLocators } from './locator-engine';
 import { classifyComponent, COMPONENT_BADGE_COLORS } from './component-classifier';
 
+function getHostSelector(host: HTMLElement): string {
+  if (host.id) return `#${host.id}`;
+  const testId = host.getAttribute('data-testid');
+  if (testId) return `[data-testid="${testId}"]`;
+  const tag = host.tagName.toLowerCase();
+  const cls = typeof host.className === 'string' && host.className.trim()
+    ? `.${host.className.trim().split(/\s+/)[0]}`
+    : '';
+  return `${tag}${cls}`;
+}
+
+export function resolveInteractiveTarget(e: Event): { target: HTMLElement; shadowHosts: string[] } {
+  const path = (e.composedPath ? e.composedPath() : []) as Node[];
+  let leaf = (path[0] as HTMLElement) || (e.target as HTMLElement);
+  if (!leaf) return { target: leaf, shadowHosts: [] };
+
+  if ((leaf as any).nodeType === 3 && (leaf as any).parentElement) {
+    leaf = (leaf as any).parentElement;
+  }
+
+  const decorativeTags = new Set([
+    'svg', 'path', 'rect', 'circle', 'use', 'g', 'polygon', 'line', 'polyline',
+    'i', 'span', 'strong', 'em', 'img', 'b', 'small', 'mark'
+  ]);
+  const interactiveSelector = 'button, a, input, select, textarea, summary, [role="button"], [role="menuitem"], [role="option"], [role="tab"], [role="combobox"], [contenteditable="true"], [contenteditable=""]';
+
+  let resolvedTarget = leaf;
+  const leafTag = (leaf.tagName || '').toLowerCase();
+
+  if (decorativeTags.has(leafTag) || !(leaf.matches && leaf.matches(interactiveSelector))) {
+    for (const node of path) {
+      if (node instanceof HTMLElement && typeof node.matches === 'function' && node.matches(interactiveSelector)) {
+        resolvedTarget = node;
+        break;
+      }
+    }
+  }
+
+  const shadowHosts: string[] = [];
+  for (let i = 0; i < path.length; i++) {
+    const node = path[i];
+    if (typeof ShadowRoot !== 'undefined' && node instanceof ShadowRoot && (node as any).host) {
+      const host = (node as any).host as HTMLElement;
+      shadowHosts.unshift(getHostSelector(host));
+    }
+  }
+
+  return { target: resolvedTarget, shadowHosts };
+}
+
 export class EventRecorder {
   private normalizer: ActionNormalizer;
   private isRecording = false;
@@ -12,10 +62,16 @@ export class EventRecorder {
   private feedbackToast: HTMLDivElement | null = null;
   private lastHoveredElement: HTMLElement | null = null;
   private scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+  private lastActionTimestamp = 0;
+  private lastAssertedText = '';
+  private autoAssertionObserver: MutationObserver | null = null;
+  private activeAssertMode: 'assert_text' | 'assert_visible' | 'print_value' | null = null;
+  private stepRecordedCallback?: (step: any) => void;
 
   constructor() {
     this.normalizer = new ActionNormalizer((step) => {
       if (!this.isRecording) return;
+      this.stepRecordedCallback?.(step);
       this.sendToBackground({
         type: 'RECORDED_STEP',
         payload: { step, url: window.location.href },
@@ -26,14 +82,36 @@ export class EventRecorder {
     this.initMessageListener();
   }
 
+  public isHudEvent(e: Event): boolean {
+    const path = (e.composedPath ? e.composedPath() : []) as Node[];
+    return path.some((n: any) => n.nodeName === 'AUTOMATEX-RECORDER-HUD' || (n.classList && n.classList.contains && n.classList.contains('automatex-hud-root')));
+  }
+
+  public getIsRecording(): boolean {
+    return this.isRecording;
+  }
+
+  public setAssertMode(mode: 'assert_text' | 'assert_visible' | 'print_value' | null): void {
+    this.activeAssertMode = mode;
+  }
+
+  public setStepRecordedCallback(cb: (step: any) => void): void {
+    this.stepRecordedCallback = cb;
+  }
+
   public start(): void {
     this.isRecording = true;
     this.createHighlightOverlay();
+    this.setupAutoAssertionObserver();
   }
 
   public stop(): void {
     this.normalizer.flushInput();
     this.isRecording = false;
+    if (this.autoAssertionObserver) {
+      this.autoAssertionObserver.disconnect();
+      this.autoAssertionObserver = null;
+    }
     if (!this.isInspecting) {
       this.removeHighlightOverlay();
     }
@@ -58,9 +136,31 @@ export class EventRecorder {
     document.addEventListener(
       'click',
       (e: MouseEvent) => {
-        const path = (e.composedPath ? e.composedPath() : []) as HTMLElement[];
-        let target = (path[0] as HTMLElement) || (e.target as HTMLElement);
+        if (this.isHudEvent(e)) return;
+        const { target, shadowHosts } = resolveInteractiveTarget(e);
         if (!target || target === this.highlightOverlay || target === this.floatingTooltip) return;
+
+        this.lastActionTimestamp = Date.now();
+
+        // 1-Click HUD Assert Mode
+        if (this.activeAssertMode) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          if (this.activeAssertMode === 'assert_text') {
+            const expectedText = (target.textContent || '').trim();
+            this.normalizer.recordAssertion(target, 'assert_text', expectedText);
+            this.showFlashFeedback(target, `💬 Assert Text "${expectedText.substring(0, 25)}" Recorded`);
+          } else if (this.activeAssertMode === 'assert_visible') {
+            this.normalizer.recordAssertion(target, 'assert_visible');
+            this.showFlashFeedback(target, '👁️ Assert Visible Recorded');
+          } else if (this.activeAssertMode === 'print_value') {
+            this.normalizer.recordPrintValue(target);
+            this.showFlashFeedback(target, '🖨️ Print Value Recorded');
+          }
+          this.activeAssertMode = null;
+          return;
+        }
 
         // If inspecting, capture full element details and stop inspection
         if (this.isInspecting) {
@@ -113,16 +213,7 @@ export class EventRecorder {
           return;
         }
 
-        // If clicked on an SVG, icon, or inline wrapper inside an interactive element, resolve to the interactive element
-        const interactive = target.closest(
-          'button, a, [role="button"], [role="menuitem"], [role="tab"], input, select, textarea'
-        ) as HTMLElement | null;
-
-        if (interactive && target !== interactive) {
-          target = interactive;
-        }
-
-        this.normalizer.recordClick(target);
+        this.normalizer.recordClick(target, shadowHosts);
       },
       true
     );
@@ -131,6 +222,7 @@ export class EventRecorder {
     document.addEventListener(
       'dblclick',
       (e: MouseEvent) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -150,6 +242,7 @@ export class EventRecorder {
     document.addEventListener(
       'contextmenu',
       (e: MouseEvent) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
         if (!e.shiftKey) return;
         e.preventDefault();
@@ -166,6 +259,7 @@ export class EventRecorder {
     document.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
         if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
 
@@ -214,27 +308,47 @@ export class EventRecorder {
       { passive: true }
     );
 
-    // Input Listener (for text inputs and textareas)
+    // Input Listener (for text inputs, textareas, and contenteditable elements)
     document.addEventListener(
       'input',
       (e: Event) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
-        const target = e.target as HTMLInputElement | HTMLTextAreaElement;
-        if (!target || !('value' in target)) return;
-        const type = (target.getAttribute('type') || 'text').toLowerCase();
-        if (['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image'].includes(type)) {
+        const path = (e.composedPath ? e.composedPath() : []) as HTMLElement[];
+        const target = (path[0] as HTMLElement) || (e.target as HTMLElement);
+        if (!target) return;
+
+        // ContentEditable elements (e.g. div[contenteditable="true"])
+        if (target.isContentEditable || target.getAttribute('contenteditable') === 'true') {
+          const val = (target.innerText || target.textContent || '').trim();
+          this.normalizer.recordInput(target, val);
           return;
         }
-        this.normalizer.recordInput(target, target.value);
+
+        if ('value' in target) {
+          const inputEl = target as HTMLInputElement | HTMLTextAreaElement;
+          const type = (inputEl.getAttribute('type') || 'text').toLowerCase();
+          if (['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image'].includes(type)) {
+            return;
+          }
+          this.normalizer.recordInput(inputEl, inputEl.value);
+        }
       },
       true
     );
 
-    // Blur / Change Listener (flushes typing buffer or captures select changes)
+    // Blur / Change Listener (flushes typing buffer or captures select/contenteditable changes)
     document.addEventListener(
       'blur',
-      () => {
+      (e: FocusEvent) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
+        const path = (e.composedPath ? e.composedPath() : []) as HTMLElement[];
+        const target = (path[0] as HTMLElement) || (e.target as HTMLElement);
+        if (target && (target.isContentEditable || target.getAttribute('contenteditable') === 'true')) {
+          const val = (target.innerText || target.textContent || '').trim();
+          this.normalizer.recordInput(target, val);
+        }
         this.normalizer.flushInput();
       },
       true
@@ -243,8 +357,10 @@ export class EventRecorder {
     document.addEventListener(
       'change',
       (e: Event) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording) return;
-        const target = e.target as HTMLElement;
+        const path = (e.composedPath ? e.composedPath() : []) as HTMLElement[];
+        const target = (path[0] as HTMLElement) || (e.target as HTMLElement);
         if (target && target.tagName.toLowerCase() === 'select') {
           this.normalizer.recordSelect(target as HTMLSelectElement);
           return;
@@ -258,6 +374,7 @@ export class EventRecorder {
     document.addEventListener(
       'mouseover',
       (e: MouseEvent) => {
+        if (this.isHudEvent(e)) return;
         if (!this.isRecording && !this.isInspecting) return;
         const target = e.target as HTMLElement;
         if (!target || target === this.highlightOverlay || target === this.floatingTooltip || target === this.feedbackToast) return;
@@ -502,6 +619,62 @@ export class EventRecorder {
         return true;
       }
     });
+  }
+
+  private setupAutoAssertionObserver(): void {
+    if (this.autoAssertionObserver || typeof MutationObserver === 'undefined') return;
+
+    try {
+      this.autoAssertionObserver = new MutationObserver((mutations) => {
+        if (!this.isRecording) return;
+        const now = Date.now();
+        if (now - this.lastActionTimestamp > 1200) return;
+
+        for (const mutation of mutations) {
+          const candidates: HTMLElement[] = [];
+
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node instanceof HTMLElement) {
+                if (node.matches('dialog[open], [role="alert"], [role="status"], #last-action-text, .toast, .alert')) {
+                  candidates.push(node);
+                }
+                const matches = node.querySelectorAll<HTMLElement>('dialog[open], [role="alert"], [role="status"], #last-action-text, .toast, .alert');
+                matches.forEach((m) => candidates.push(m));
+              }
+            });
+          } else if (mutation.type === 'attributes' || mutation.type === 'characterData') {
+            const target = mutation.target instanceof HTMLElement ? mutation.target : mutation.target.parentElement;
+            if (target && target.matches && target.matches('dialog[open], [role="alert"], [role="status"], #last-action-text, .toast, .alert')) {
+              candidates.push(target);
+            }
+          }
+
+          for (const candidate of candidates) {
+            const text = (candidate.textContent || '').trim();
+            if (text && text.length > 1 && text !== this.lastAssertedText) {
+              this.lastAssertedText = text;
+              this.normalizer.recordAssertion(candidate, 'assert_text', text);
+              this.showFlashFeedback(candidate, `✓ Auto-Assert: "${text.substring(0, 25)}"`);
+              break;
+            }
+          }
+        }
+      });
+
+      const root = document.body || document.documentElement;
+      if (root) {
+        this.autoAssertionObserver.observe(root, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: true,
+          attributeFilter: ['open', 'class', 'style', 'hidden', 'aria-hidden'],
+        });
+      }
+    } catch {
+      // In constrained testing environments, silently skip
+    }
   }
 }
 

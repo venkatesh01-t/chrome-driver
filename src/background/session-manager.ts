@@ -184,12 +184,18 @@ export class SessionManager {
     this.notify();
   }
 
-  public async updateCodeStyle(style: 'simple' | 'enterprise' | 'pytest'): Promise<void> {
+  public async updateCodeStyle(style: 'simple' | 'enterprise' | 'pytest' | 'pom'): Promise<void> {
     if (!this._activeTestCase) {
       this._activeTestCase = createTestCase('Automated Test', '');
     }
     this._activeTestCase.settings.codeStyle = style;
     this._activeTestCase.updatedAt = Date.now();
+    await this.persist();
+  }
+
+  public async loadTestCase(testCase: TestCaseModel): Promise<void> {
+    this._isRecording = false;
+    this._activeTestCase = testCase;
     await this.persist();
   }
 

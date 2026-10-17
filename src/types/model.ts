@@ -67,6 +67,17 @@ export type ComponentType =
   | 'pagination'
   | 'generic';
 
+export interface ElementFingerprint {
+  tagName: string;
+  text?: string;
+  ariaRole?: string;
+  ariaLabel?: string;
+  name?: string;
+  placeholder?: string;
+  rowContext?: string;
+  labelText?: string;
+}
+
 export interface TargetElementModel {
   tagName: string;
   locators: LocatorCandidate[];
@@ -81,6 +92,9 @@ export interface TargetElementModel {
   componentType?: ComponentType;
   componentHierarchy?: string;
   dataFeedType?: string;
+  name?: string;
+  attributes?: Record<string, string>;
+  fingerprint?: ElementFingerprint;
 }
 
 export interface TestStep {
@@ -98,6 +112,9 @@ export interface TestStep {
   keyCombo?: string;
   dragTarget?: TargetElementModel;
   iframePath?: string;
+  iframeSelector?: string;
+  shadowHosts?: string[];
+  fingerprint?: ElementFingerprint;
   waitDuration?: number;
   tabIndex?: number;
   tabTitle?: string;
@@ -108,7 +125,7 @@ export interface TestCaseSettings {
   timeout: number;
   useExplicitWait: boolean;
   maskSensitiveData: boolean;
-  codeStyle: 'simple' | 'enterprise' | 'pytest';
+  codeStyle: 'simple' | 'enterprise' | 'pytest' | 'pom';
   engine?: 'selenium' | 'playwright';
   selfHealing?: boolean;
   stealthMode?: boolean;
@@ -157,6 +174,9 @@ export function createTestStep(params: {
   keyCombo?: string;
   dragTarget?: TargetElementModel;
   iframePath?: string;
+  iframeSelector?: string;
+  shadowHosts?: string[];
+  fingerprint?: ElementFingerprint;
   waitDuration?: number;
   tabIndex?: number;
   tabTitle?: string;
@@ -183,6 +203,9 @@ export function createTestStep(params: {
     keyCombo: params.keyCombo,
     dragTarget: params.dragTarget,
     iframePath: params.iframePath,
+    iframeSelector: params.iframeSelector || params.iframePath,
+    shadowHosts: params.shadowHosts,
+    fingerprint: params.fingerprint,
     waitDuration: params.waitDuration,
     tabIndex: params.tabIndex,
     tabTitle: params.tabTitle,

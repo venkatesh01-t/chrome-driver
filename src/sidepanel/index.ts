@@ -448,6 +448,72 @@ if (downloadCodeBtn) {
   });
 }
 
+// Export & Import JSON Handlers
+function exportSessionJson(): void {
+  if (!activeTestCase || (activeTestCase.steps || []).length === 0) {
+    alert('No recorded steps found to export!');
+    return;
+  }
+  const jsonStr = JSON.stringify(activeTestCase, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (activeTestCase.name || 'session').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  a.download = `${safeName}_${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+const exportJsonBtn = document.getElementById('exportJsonBtn') as HTMLButtonElement;
+const exportJsonCodeBtn = document.getElementById('exportJsonCodeBtn') as HTMLButtonElement;
+const importJsonBtn = document.getElementById('importJsonBtn') as HTMLButtonElement;
+const importJsonInput = document.getElementById('importJsonInput') as HTMLInputElement;
+
+if (exportJsonBtn) {
+  exportJsonBtn.addEventListener('click', exportSessionJson);
+}
+if (exportJsonCodeBtn) {
+  exportJsonCodeBtn.addEventListener('click', exportSessionJson);
+}
+if (importJsonBtn && importJsonInput) {
+  importJsonBtn.addEventListener('click', () => {
+    importJsonInput.value = '';
+    importJsonInput.click();
+  });
+
+  importJsonInput.addEventListener('change', () => {
+    const file = importJsonInput.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!parsed || !Array.isArray(parsed.steps)) {
+          alert('Invalid session JSON format: Missing "steps" array.');
+          return;
+        }
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          chrome.runtime.sendMessage(
+            { type: 'LOAD_SESSION', payload: { testCase: parsed } },
+            () => {
+              refreshState();
+              alert(`Successfully loaded session "${parsed.name || 'Untitled'}" with ${parsed.steps.length} steps!`);
+            }
+          );
+        }
+      } catch (err) {
+        alert('Failed to parse JSON file: ' + (err as Error).message);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
 // Engine Switching (Selenium 4 vs Playwright)
 document.querySelectorAll<HTMLButtonElement>('.engine-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -464,7 +530,7 @@ document.querySelectorAll<HTMLButtonElement>('.engine-btn').forEach((btn) => {
 // Code Style Switching
 document.querySelectorAll<HTMLButtonElement>('.style-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    const style = btn.getAttribute('data-style') as 'simple' | 'enterprise' | 'pytest';
+    const style = btn.getAttribute('data-style') as 'simple' | 'enterprise' | 'pytest' | 'pom';
     if (!style) return;
     document.querySelectorAll('.style-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');

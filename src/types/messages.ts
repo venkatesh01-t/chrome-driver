@@ -22,7 +22,9 @@ export type MessageType =
   | 'ADD_WAIT_STEP'
   | 'ADD_TAB_STEP'
   | 'TEST_LOCATOR'
-  | 'TEST_LOCATOR_RESULT';
+  | 'TEST_LOCATOR_RESULT'
+  | 'LOAD_SESSION'
+  | 'TOGGLE_HUD';
 
 export interface StartRecordingPayload {
   tabId?: number;
@@ -115,11 +117,13 @@ export type ExtensionMessage =
   | { type: 'START_INSPECTING' }
   | { type: 'STOP_INSPECTING' }
   | { type: 'ELEMENT_SELECTED'; payload: ElementSelectedPayload }
-  | { type: 'UPDATE_CODE_STYLE'; payload: { codeStyle: 'simple' | 'enterprise' | 'pytest' } }
+  | { type: 'UPDATE_CODE_STYLE'; payload: { codeStyle: 'simple' | 'enterprise' | 'pytest' | 'pom' } }
   | { type: 'UPDATE_ENGINE'; payload: { engine: 'selenium' | 'playwright' } }
   | { type: 'ADD_NAVIGATE_STEP'; payload: { url: string } }
   | { type: 'ADD_WAIT_STEP'; payload: { seconds: number } }
   | { type: 'ADD_TAB_STEP'; payload: { tabIndex?: number; tabTitle?: string; tabUrl?: string; url?: string; action?: 'switch_tab' | 'close_tab' } }
   | { type: 'TEST_LOCATOR'; payload: TestLocatorPayload }
-  | { type: 'TEST_LOCATOR_RESULT'; payload: TestLocatorResultPayload };
+  | { type: 'TEST_LOCATOR_RESULT'; payload: TestLocatorResultPayload }
+  | { type: 'LOAD_SESSION'; payload: { testCase: TestCaseModel } }
+  | { type: 'TOGGLE_HUD' };
 

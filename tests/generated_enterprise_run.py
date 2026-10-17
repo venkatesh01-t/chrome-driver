@@ -29,9 +29,21 @@ def run_test():
         driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", btn)
         btn.click()
 
+        # Embedded Payment Iframe Interaction
+        iframe = wait.until(EC.presence_of_element_located((By.ID, "payment-iframe")))
+        driver.switch_to.frame(iframe)
+        cc_input = wait.until(EC.visibility_of_element_located((By.ID, "cc-num")))
+        cc_input.clear()
+        cc_input.send_keys("4242 4242 4242 4242")
+        pay_btn = wait.until(EC.element_to_be_clickable((By.ID, "iframe-pay-btn")))
+        pay_btn.click()
+        driver.switch_to.default_content()
+        status_el = wait.until(EC.visibility_of_element_located((By.ID, "last-action-text")))
+        assert "Iframe Payment Submitted" in status_el.text
+
         elapsed = time.perf_counter() - start_time
         print(f"[PERF] Enterprise test completed in {elapsed:.2f}s")
-        print("[SUCCESS] Enterprise script ran perfectly in Chrome!")
+        print("[SUCCESS] Enterprise script ran perfectly in Chrome with Iframe interaction!")
     finally:
         driver.quit()
 

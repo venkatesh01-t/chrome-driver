@@ -131,6 +131,7 @@ function detectComponentType(element: HTMLElement): ComponentType {
   if (role === 'contentinfo') return 'footer';
   if (role === 'complementary') return 'sidebar';
   if (role === 'tab' || role === 'tablist' || role === 'tabpanel') return 'tab';
+  if (role === 'combobox' || role === 'listbox' || role === 'option') return 'dropdown';
   if (role === 'menu' || role === 'menubar' || role === 'menuitem') return 'menu';
   if (role === 'table' || role === 'grid') return 'table';
   if (role === 'form' || role === 'search') return 'form';

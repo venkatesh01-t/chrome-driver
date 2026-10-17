@@ -222,5 +222,43 @@ describe('Action Normalizer', () => {
     expect(emittedSteps[1].action).toBe('print_value');
     expect(emittedSteps[1].value).toBe('987654321');
   });
+
+  it('strictly coalesces consecutive input and change events on the same element into a single atomic step', () => {
+    document.body.innerHTML = `<input id="search-input" type="text" />`;
+    const input = document.getElementById('search-input') as HTMLInputElement;
+
+    // Simulate typing initial chunk
+    normalizer.recordInput(input, 'sel');
+    normalizer.flushInput();
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].action).toBe('type');
+    expect(emittedSteps[0].value).toBe('sel');
+
+    // Simulate subsequent input and change events without intervening clicks
+    input.value = 'selenium';
+    normalizer.recordInput(input, 'selenium');
+    normalizer.recordChange(input);
+
+    // Must strictly coalesce into single atomic step rather than creating duplicate steps
+    expect(emittedSteps.length).toBe(1);
+    expect(emittedSteps[0].value).toBe('selenium');
+  });
+
+  it('captures Enter key submissions immediately following input fields as explicit press_key Enter steps', () => {
+    document.body.innerHTML = `<input id="email-field" type="email" />`;
+    const input = document.getElementById('email-field') as HTMLInputElement;
+
+    normalizer.recordInput(input, 'user@domain.com');
+    normalizer.recordKeyPress('Enter', input);
+
+    // Step 1: type action
+    // Step 2: explicit press_key Enter action on the input field
+    expect(emittedSteps.length).toBe(2);
+    expect(emittedSteps[0].action).toBe('type');
+    expect(emittedSteps[0].value).toBe('user@domain.com');
+    expect(emittedSteps[1].action).toBe('press_key');
+    expect(emittedSteps[1].keyCombo).toBe('Enter');
+    expect(emittedSteps[1].target.componentType).toBe('form');
+  });
 });
 

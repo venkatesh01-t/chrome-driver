@@ -1,9 +1,9 @@
 import { TestStep, createTestStep } from '../types/model';
-import { generateLocators, detectFieldSemantics } from './locator-engine';
+import { generateLocators, detectFieldSemantics, detectIframeLocator, extractElementFingerprint } from './locator-engine';
 import { classifyComponent } from './component-classifier';
 
 interface InputBuffer {
-  element: HTMLInputElement | HTMLTextAreaElement;
+  element: HTMLInputElement | HTMLTextAreaElement | HTMLElement;
   value: string;
   timestamp: number;
 }
@@ -15,14 +15,25 @@ export class ActionNormalizer {
   private lastClickTime = 0;
   private currentInputBuffer: InputBuffer | null = null;
   private lastTypedElement: HTMLElement | null = null;
+  private lastRecordedTypeStep: TestStep | null = null;
+  private iframeDetector: () => string | undefined;
 
-  constructor(onStep: (step: TestStep) => void) {
+  constructor(
+    onStep: (step: TestStep) => void,
+    iframeDetector: () => string | undefined = detectIframeLocator
+  ) {
     this.onStep = onStep;
+    this.iframeDetector = iframeDetector;
   }
 
-  public recordClick(element: HTMLElement): void {
+  private getIframePath(explicit?: string): string | undefined {
+    return explicit !== undefined ? explicit : this.iframeDetector();
+  }
+
+  public recordClick(element: HTMLElement, shadowHosts?: string[]): void {
     // 1. Flush any pending typing actions before recording click
     this.flushInput();
+    this.lastRecordedTypeStep = null;
 
     // 2. Debounce duplicate clicks on identical element within 300ms or on element just typed into
     const now = Date.now();
@@ -72,6 +83,7 @@ export class ActionNormalizer {
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
     const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
+    const fingerprint = extractElementFingerprint(element);
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action,
@@ -83,13 +95,18 @@ export class ActionNormalizer {
         semanticType: semantics.semanticType,
         labelText: semantics.labelText,
         shadowHostSelector,
-        shadowHostPath,
+        shadowHostPath: shadowHosts || shadowHostPath,
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
         dataFeedType: component.dataFeed,
+        fingerprint,
       },
       value,
+      shadowHosts: shadowHosts || shadowHostPath,
+      iframeSelector: this.getIframePath(),
+      iframePath: this.getIframePath(),
+      fingerprint,
       waitCondition: 'clickable',
     });
 
@@ -128,18 +145,38 @@ export class ActionNormalizer {
         dataFeedType: component.dataFeed,
       },
       value,
+      iframePath: this.getIframePath(),
       waitCondition: 'presence',
     });
 
     this.onStep(step);
   }
 
-  public recordInput(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
+  public recordInput(element: HTMLInputElement | HTMLTextAreaElement | HTMLElement, value: string): void {
+    if (this.lastRecordedTypeStep && this.lastTypedElement === element) {
+      const isSensitive = this.lastRecordedTypeStep.isSensitive;
+      this.lastRecordedTypeStep.value = isSensitive ? '••••••••' : value;
+      this.currentInputBuffer = null;
+      return;
+    }
+
     this.currentInputBuffer = {
       element,
       value,
       timestamp: Date.now(),
     };
+  }
+
+  public recordChange(element: HTMLInputElement | HTMLTextAreaElement | HTMLElement): void {
+    const rawVal = 'value' in element ? (element as HTMLInputElement).value : (element.innerText || element.textContent || '');
+    const effectiveVal = (rawVal && rawVal.trim()) ? rawVal : (this.lastRecordedTypeStep?.value || '');
+    if (this.lastRecordedTypeStep && this.lastTypedElement === element) {
+      const isSensitive = this.lastRecordedTypeStep.isSensitive;
+      this.lastRecordedTypeStep.value = isSensitive ? '••••••••' : (effectiveVal || this.lastRecordedTypeStep.value);
+      return;
+    }
+    this.recordInput(element, effectiveVal);
+    this.flushInput();
   }
 
   public flushInput(): void {
@@ -149,18 +186,20 @@ export class ActionNormalizer {
     this.currentInputBuffer = null;
 
     const tagName = element.tagName.toLowerCase();
+    const isContentEditable = (element as HTMLElement).isContentEditable || element.getAttribute('contenteditable') === 'true';
     const locators = generateLocators(element);
     const semantics = detectFieldSemantics(element);
     const component = classifyComponent(element);
-    const isSensitive = semantics.semanticType === 'password' || this.detectSensitiveField(element);
+    const isSensitive = !isContentEditable && (semantics.semanticType === 'password' || this.detectSensitiveField(element as HTMLElement));
 
     // If user clicked but left empty, use smart semantic default value
-    const effectiveValue = (value && value.trim()) ? value : semantics.defaultValue;
+    const effectiveValue = (value && value.trim()) ? value : (isContentEditable ? 'Sample content' : semantics.defaultValue);
 
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
     const shadowHostPath = locators.find((l) => l.shadowHostPath)?.shadowHostPath;
 
+    const fingerprint = extractElementFingerprint(element);
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action: 'type',
@@ -169,22 +208,28 @@ export class ActionNormalizer {
         locators,
         selectedLocatorIndex: 0,
         isSensitive,
-        semanticType: semantics.semanticType,
+        semanticType: isContentEditable ? 'contenteditable' : semantics.semanticType,
         labelText: semantics.labelText,
         shadowHostSelector,
         shadowHostPath,
         isShadowDom: isInsideShadow,
-        componentType: component.type,
+        componentType: isContentEditable ? 'input' : component.type,
         componentHierarchy: component.hierarchy,
         dataFeedType: component.dataFeed,
+        fingerprint,
       },
       value: isSensitive ? '••••••••' : effectiveValue,
       isSensitive,
       variableName: isSensitive ? this.deriveVariableName(element) : undefined,
+      shadowHosts: shadowHostPath,
+      iframeSelector: this.getIframePath(),
+      iframePath: this.getIframePath(),
+      fingerprint,
       waitCondition: 'visible',
     });
 
     this.lastTypedElement = element;
+    this.lastRecordedTypeStep = step;
     this.onStep(step);
   }
 
@@ -202,6 +247,7 @@ export class ActionNormalizer {
       assertExpected = element.getAttribute(attributeName) || '';
     }
 
+    const fingerprint = extractElementFingerprint(element);
     const step = createTestStep({
       stepNumber: this.stepCounter++,
       action: assertType,
@@ -215,9 +261,14 @@ export class ActionNormalizer {
         isShadowDom: isInsideShadow,
         componentType: component.type,
         componentHierarchy: component.hierarchy,
+        fingerprint,
       },
       assertExpected,
       assertAttribute: attributeName,
+      shadowHosts: shadowHostPath,
+      iframeSelector: this.getIframePath(),
+      iframePath: this.getIframePath(),
+      fingerprint,
       waitCondition: 'visible',
     });
 
@@ -257,6 +308,7 @@ export class ActionNormalizer {
         componentHierarchy: component.hierarchy,
       },
       value: extractedValue,
+      iframePath: this.getIframePath(),
       waitCondition: 'visible',
     });
 
@@ -285,6 +337,7 @@ export class ActionNormalizer {
         componentType: component.type,
         componentHierarchy: component.hierarchy,
       },
+      iframePath: this.getIframePath(),
       waitCondition: 'visible',
     });
 
@@ -293,10 +346,14 @@ export class ActionNormalizer {
 
   public recordKeyPress(keyCombo: string, element: HTMLElement): void {
     this.flushInput();
+    this.lastRecordedTypeStep = null;
     const locators = generateLocators(element);
     const component = classifyComponent(element);
     const isInsideShadow = locators.some((l) => l.isShadowDom);
     const shadowHostSelector = locators.find((l) => l.shadowHostSelector)?.shadowHostSelector;
+
+    const isInputElement = ['input', 'textarea'].includes(element.tagName.toLowerCase());
+    const isEnterSubmission = keyCombo.toLowerCase() === 'enter' && isInputElement;
 
     const step = createTestStep({
       stepNumber: this.stepCounter++,
@@ -307,10 +364,11 @@ export class ActionNormalizer {
         selectedLocatorIndex: 0,
         shadowHostSelector,
         isShadowDom: isInsideShadow,
-        componentType: component.type,
+        componentType: isEnterSubmission ? 'form' : component.type,
         componentHierarchy: component.hierarchy,
       },
-      keyCombo,
+      keyCombo: isEnterSubmission ? 'Enter' : keyCombo,
+      iframePath: this.getIframePath(),
       waitCondition: 'visible',
     });
 
@@ -356,6 +414,7 @@ export class ActionNormalizer {
         dataFeedType: 'file_upload',
       },
       value: filePath,
+      iframePath: this.getIframePath(),
       waitCondition: 'presence',
     });
 
@@ -386,6 +445,7 @@ export class ActionNormalizer {
         componentType: targetComponent.type,
         componentHierarchy: targetComponent.hierarchy,
       },
+      iframePath: this.getIframePath(),
       waitCondition: 'visible',
     });
 
@@ -414,7 +474,7 @@ export class ActionNormalizer {
     this.onStep(step);
   }
 
-  private detectSensitiveField(element: HTMLInputElement | HTMLTextAreaElement): boolean {
+  private detectSensitiveField(element: HTMLElement): boolean {
     if (element instanceof HTMLInputElement && element.type === 'password') {
       return true;
     }

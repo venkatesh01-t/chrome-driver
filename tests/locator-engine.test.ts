@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateLocators, isDynamicId, detectFieldSemantics } from '../src/content/locator-engine';
-import { validateLocator } from '../src/content/locator-validator';
+import {
+  generateLocators,
+  isDynamicId,
+  isDynamicAttribute,
+  detectFieldSemantics,
+  calculateShannonEntropy,
+  extractElementFingerprint,
+} from '../src/content/locator-engine';
+import { validateLocator, scoreElementSimilarity } from '../src/content/locator-validator';
 
 describe('Smart Locator Engine', () => {
   beforeEach(() => {
@@ -16,6 +23,32 @@ describe('Smart Locator Engine', () => {
     expect(isDynamicId('username')).toBe(false);
     expect(isDynamicId('login-btn')).toBe(false);
     expect(isDynamicId('password_field')).toBe(false);
+  });
+
+  it('detects and rejects unstable auto-generated dynamic attributes (Entropy & Noise Filter)', () => {
+    // React 18 useId format
+    expect(isDynamicAttribute(':r0:')).toBe(true);
+    expect(isDynamicAttribute(':r1:')).toBe(true);
+    expect(isDynamicAttribute(':ra:')).toBe(true);
+
+    // Framework dynamic tokens
+    expect(isDynamicAttribute('react-select-4-input')).toBe(true);
+    expect(isDynamicAttribute('css-19bb58m')).toBe(true);
+    expect(isDynamicAttribute('ng-tns-c123-4')).toBe(true);
+    expect(isDynamicAttribute('sc-bdVaJa')).toBe(true);
+
+    // UUIDs and long hex hashes
+    expect(isDynamicAttribute('c0a80101-0000-0000-0000-000000000000')).toBe(true);
+    expect(isDynamicAttribute('1a2b3c4d5e')).toBe(true);
+
+    // 3+ consecutive digits
+    expect(isDynamicAttribute('field_12345')).toBe(true);
+    expect(isDynamicAttribute('btn-9876')).toBe(true);
+
+    // Stable attributes should be accepted
+    expect(isDynamicAttribute('email')).toBe(false);
+    expect(isDynamicAttribute('user_login')).toBe(false);
+    expect(isDynamicAttribute('submit-button')).toBe(false);
   });
 
   it('generates high-confidence ID locator for stable unique ID', () => {
@@ -198,7 +231,141 @@ describe('Smart Locator Engine', () => {
     expect(matchCandidate).toBeDefined();
     expect(matchCandidate?.matchCount).toBe(1);
   });
+
+  it('generates anchor-relative contextual XPath for inputs anchored to preceding label', () => {
+    document.body.innerHTML = `
+      <form>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="text" class="form-control" />
+        </div>
+      </form>
+    `;
+    const input = document.querySelector('input') as HTMLInputElement;
+    const candidates = generateLocators(input, document);
+
+    const labelCandidate = candidates.find(
+      (c) => c.strategy === 'xpath' && c.value.includes('normalize-space()=\'Email Address\'')
+    );
+    expect(labelCandidate).toBeDefined();
+    expect(labelCandidate?.value).toContain('/following::input[1]');
+    expect(labelCandidate?.isUnique).toBe(true);
+    expect(labelCandidate?.matchCount).toBe(1);
+    expect(labelCandidate?.score).toBeGreaterThanOrEqual(90);
+  });
+
+  it('generates table/row-anchored contextual XPath with semantic action button', () => {
+    document.body.innerHTML = `
+      <table>
+        <tbody>
+          <tr>
+            <td>User 1</td>
+            <td><button>Edit</button></td>
+          </tr>
+          <tr>
+            <td>Admin User</td>
+            <td><button>Delete</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    const deleteBtn = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete'
+    ) as HTMLButtonElement;
+
+    const candidates = generateLocators(deleteBtn, document);
+    const rowCandidate = candidates.find(
+      (c) => c.strategy === 'xpath' && c.value.includes('contains(normalize-space(), \'Admin User\')')
+    );
+
+    expect(rowCandidate).toBeDefined();
+    expect(rowCandidate?.value).toContain('button[normalize-space()=\'Delete\']');
+    expect(rowCandidate?.isUnique).toBe(true);
+    expect(rowCandidate?.matchCount).toBe(1);
+    expect(rowCandidate?.score).toBeGreaterThanOrEqual(88);
+  });
+
+  it('penalizes positional indices unless anchored to unique text', () => {
+    document.body.innerHTML = `
+      <div>
+        <label>Name</label>
+        <input type="text" />
+        <input type="text" />
+      </div>
+    `;
+    // Raw positional XPath without text anchor
+    const unanchoredResult = validateLocator(
+      { strategy: 'xpath', value: '(//input)[1]', isUnique: false, matchCount: 0, score: 75 },
+      document
+    );
+    expect(unanchoredResult.score).toBeLessThanOrEqual(40);
+    expect(unanchoredResult.warning).toBe('dom_dependent');
+
+    // Contextual text-anchored XPath retains high confidence
+    const anchoredResult = validateLocator(
+      {
+        strategy: 'xpath',
+        value: '//label[normalize-space()="Name"]/following::input[1]',
+        isUnique: false,
+        matchCount: 0,
+        score: 92,
+      },
+      document
+    );
+    // Should NOT be penalized down to 40 because it is text-anchored
+    expect(anchoredResult.score).toBeGreaterThan(80);
+  });
+
+  it('calculates Shannon entropy correctly for deterministic filtering', () => {
+    // English words have lower entropy
+    const lowEntropy = calculateShannonEntropy('button');
+    expect(lowEntropy).toBeLessThan(3.0);
+
+    // Highly randomized tokens have higher entropy
+    const highEntropy = calculateShannonEntropy('x8f9q2m1k4p7z3');
+    expect(highEntropy).toBeGreaterThan(3.2);
+
+    // Dynamic attribute check rejects high entropy / randomized framework tokens
+    expect(isDynamicAttribute(':r4f:-input-894723')).toBe(true);
+    expect(isDynamicAttribute('cost-center-code')).toBe(false);
+    expect(isDynamicAttribute('notifications-btn')).toBe(false);
+  });
+
+  it('extracts multi-attribute element fingerprints and computes similarity scores accurately', () => {
+    document.body.innerHTML = `
+      <table>
+        <tr>
+          <td>Alice Johnson</td>
+          <td><button class="btn approve-btn" aria-label="Approve Alice">Approve</button></td>
+        </tr>
+      </table>
+    `;
+    const btn = document.querySelector('button') as HTMLButtonElement;
+    const fingerprint = extractElementFingerprint(btn);
+
+    expect(fingerprint.tagName).toBe('button');
+    expect(fingerprint.text).toBe('Approve');
+    expect(fingerprint.ariaLabel).toBe('Approve Alice');
+    expect(fingerprint.rowContext).toContain('Alice Johnson');
+
+    // Perfect similarity against itself
+    const exactScore = scoreElementSimilarity(fingerprint, btn);
+    expect(exactScore).toBe(1.0);
+
+    // Slightly modified element (e.g. class changed, aria-label missing) still gets high similarity
+    const modifiedBtn = document.createElement('button');
+    modifiedBtn.textContent = 'Approve';
+    const similarScore = scoreElementSimilarity(fingerprint, modifiedBtn);
+    expect(similarScore).toBeGreaterThan(0.5);
+
+    // Completely different element gets low similarity
+    const unrelatedDiv = document.createElement('div');
+    unrelatedDiv.textContent = 'Cancel';
+    const unrelatedScore = scoreElementSimilarity(fingerprint, unrelatedDiv);
+    expect(unrelatedScore).toBeLessThan(0.3);
+  });
 });
+
 
 
 
