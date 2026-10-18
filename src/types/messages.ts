@@ -24,7 +24,11 @@ export type MessageType =
   | 'TEST_LOCATOR'
   | 'TEST_LOCATOR_RESULT'
   | 'LOAD_SESSION'
-  | 'TOGGLE_HUD';
+  | 'TOGGLE_HUD'
+  | 'START_REPLAY'
+  | 'STOP_REPLAY'
+  | 'REPLAY_STEP_UPDATE'
+  | 'REPLAY_COMPLETE';
 
 export interface StartRecordingPayload {
   tabId?: number;
@@ -125,5 +129,9 @@ export type ExtensionMessage =
   | { type: 'TEST_LOCATOR'; payload: TestLocatorPayload }
   | { type: 'TEST_LOCATOR_RESULT'; payload: TestLocatorResultPayload }
   | { type: 'LOAD_SESSION'; payload: { testCase: TestCaseModel } }
-  | { type: 'TOGGLE_HUD' };
+  | { type: 'TOGGLE_HUD' }
+  | { type: 'START_REPLAY'; payload?: { stepDelayMs?: number } }
+  | { type: 'STOP_REPLAY' }
+  | { type: 'REPLAY_STEP_UPDATE'; payload: { stepId: string; stepNumber: number; status: 'running' | 'passed' | 'failed' | 'skipped'; durationMs?: number; error?: string } }
+  | { type: 'REPLAY_COMPLETE'; payload: { totalPassed: number; totalFailed: number; totalSteps: number } };
 

@@ -31,3 +31,6 @@ downloads/
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Antigravity Agents & Skills Junction
+.agents/
